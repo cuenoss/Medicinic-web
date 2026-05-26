@@ -26,7 +26,7 @@ services:
 
   - type: web
     name: mediclinic-frontend
-    runtime: static
+    env: static
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
