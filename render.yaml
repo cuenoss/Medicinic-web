@@ -22,10 +22,6 @@ services:
         generateValue: true
       - key: ALLOWED_ORIGINS
         sync: false
-        fromService:
-          name: mediclinic-frontend
-          type: web
-          property: url
 
   - type: web
     name: mediclinic-frontend
@@ -35,7 +31,3 @@ services:
     envVars:
       - key: VITE_API_URL
         sync: false
-        fromService:
-          name: mediclinic-backend
-          type: web
-          property: url
