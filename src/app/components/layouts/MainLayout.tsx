@@ -8,28 +8,45 @@ import {
   LogOut,
   Menu,
   X,
+  Globe,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+
+const LANGUAGES = [
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'ar', label: 'العربية', flag: '🇩🇿' },
+];
 
 export function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { t, i18n } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/auth/login');
   };
 
+  const handleLanguageChange = (code: string) => {
+    i18n.changeLanguage(code);
+    setLangMenuOpen(false);
+  };
+
+  const currentLang = LANGUAGES.find(l => l.code === i18n.language) || LANGUAGES[0];
+
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Patients', href: '/patients', icon: Users },
-    { name: 'Appointments', href: '/appointments', icon: Calendar },
-    { name: 'Finance', href: '/finance', icon: DollarSign },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: t('nav.dashboard'), href: '/', icon: LayoutDashboard },
+    { name: t('nav.patients'), href: '/patients', icon: Users },
+    { name: t('nav.appointments'), href: '/appointments', icon: Calendar },
+    { name: t('nav.finance'), href: '/finance', icon: DollarSign },
+    { name: t('nav.settings'), href: '/settings', icon: Settings },
   ];
 
   const isActive = (href: string) => {
@@ -77,7 +94,7 @@ export function MainLayout() {
           </div>
           <div>
             <h1 className="font-semibold text-slate-800">MediClinic</h1>
-            <p className="text-xs text-slate-500">Management System</p>
+            <p className="text-xs text-slate-500">{t('nav.managementSystem')}</p>
           </div>
         </div>
 
@@ -88,7 +105,7 @@ export function MainLayout() {
             const active = isActive(item.href);
             return (
               <Link
-                key={item.name}
+                key={item.href}
                 to={item.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
@@ -97,17 +114,48 @@ export function MainLayout() {
                     : 'text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-5 h-5 shrink-0" />
                 <span className="font-medium">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* User Info & Logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
+        {/* Bottom section */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 space-y-2">
+
+          {/* Language Switcher */}
+          <div className="relative">
+            <button
+              onClick={() => setLangMenuOpen(!langMenuOpen)}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <Globe className="w-5 h-5 shrink-0" />
+              <span className="font-medium text-sm flex-1 text-left">
+                {currentLang.flag} {currentLang.label}
+              </span>
+            </button>
+
+            {langMenuOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden z-50">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => handleLanguageChange(lang.code)}
+                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-slate-50 ${
+                      i18n.language === lang.code ? 'text-blue-600 bg-blue-50' : 'text-slate-600'
+                    }`}
+                  >
+                    <span>{lang.flag}</span>
+                    <span>{lang.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* User Info */}
-          <div className="mb-3 px-4">
+          <div className="px-4">
             <p className="text-sm font-medium text-slate-800 truncate">
               {user?.fullName || 'Doctor'}
             </p>
@@ -115,7 +163,7 @@ export function MainLayout() {
               {user?.email || 'doctor@clinic.com'}
             </p>
           </div>
-          
+
           {/* Logout Button */}
           <Button
             variant="ghost"
@@ -123,7 +171,7 @@ export function MainLayout() {
             onClick={handleLogout}
           >
             <LogOut className="w-5 h-5 mr-3" />
-            Logout
+            {t('nav.logout')}
           </Button>
         </div>
       </aside>

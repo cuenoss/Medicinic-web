@@ -137,7 +137,8 @@ export class PatientsService extends ApiClient {
 
   // Get file URL for viewing
   getFileUrl(patientId: number, fileId: number): string {
-    return `http://127.0.0.1:8000/api/patients/${patientId}/files/${fileId}`;
+    const base = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+    return `${base}/api/patients/${patientId}/files/${fileId}`;
   }
 
   // Download file with authentication

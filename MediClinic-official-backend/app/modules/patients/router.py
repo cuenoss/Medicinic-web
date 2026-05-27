@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, Depends, APIRouter, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from typing import Optional, List
 from app.db import get_db
 from .models import Patient, attached_files
@@ -21,6 +21,9 @@ from datetime import datetime, timedelta, timezone
 import mimetypes
 import os
 import uuid
+import cloudinary
+import cloudinary.uploader
+from app.cloudinary_config import *
 
 router = APIRouter(tags=["patients"])
 
@@ -240,17 +243,9 @@ async def get_patient_file(
         
         if not file_record:
             raise HTTPException(status_code=404, detail="File not found")
-        
-        # Check if file exists on disk
-        if not os.path.exists(file_record.file_path):
-            raise HTTPException(status_code=404, detail="File not found on disk")
-        
-        # Return file with proper media type
-        return FileResponse(
-            path=file_record.file_path,
-            filename=file_record.file_name,
-            media_type=file_record.file_type
-        )
+
+        # Redirect to Cloudinary URL
+        return RedirectResponse(url=file_record.file_path)
     except HTTPException:
         raise
     except Exception as e:
@@ -281,33 +276,15 @@ async def upload_patient_file(
                 detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB"
             )
         
-        # Create uploads directory if it doesn't exist
-        upload_dir = "uploads/patients"
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        # Generate unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = os.path.join(upload_dir, unique_filename)
-        
-        # Save file with proper error handling
-        try:
-            content = await file.read()
-            if len(content) > MAX_FILE_SIZE:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB"
-                )
-            
-            with open(file_path, "wb") as buffer:
-                buffer.write(content)
-        except Exception as e:
+        # Read file content
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
             raise HTTPException(
-                status_code=500, 
-                detail=f"Failed to save file: {str(e)}"
+                status_code=400,
+                detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB"
             )
-        
-        # MIME type (model requires non-null file_type)
+
+        # MIME type
         file_type = (file.content_type or "").strip() or None
         if not file_type or file_type == "application/octet-stream":
             guessed, _ = mimetypes.guess_type(file.filename)
@@ -316,11 +293,25 @@ async def upload_patient_file(
         if not file_type:
             file_type = "application/octet-stream"
 
-        # Save file record to database
+        # Upload to Cloudinary
+        try:
+            resource_type = "image" if file_type.startswith("image/") else "raw"
+            upload_result = cloudinary.uploader.upload(
+                content,
+                folder=f"mediclinic/patients/{patient_id}",
+                public_id=str(uuid.uuid4()),
+                resource_type=resource_type,
+                use_filename=False,
+            )
+            file_url = upload_result["secure_url"]
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+
+        # Save file record to database — store Cloudinary URL in file_path
         new_file = attached_files(
             patient_id=patient_id,
             file_name=file.filename,
-            file_path=file_path,
+            file_path=file_url,
             file_type=file_type,
             created_at=datetime.utcnow(),
         )
@@ -363,13 +354,18 @@ async def delete_patient_file(
         if not file_record:
             raise HTTPException(status_code=404, detail="File not found")
         
-        # Delete physical file with error handling
+        # Delete from Cloudinary if the path is a Cloudinary URL
         try:
-            if os.path.exists(file_record.file_path):
-                os.remove(file_record.file_path)
+            file_url = file_record.file_path
+            if "cloudinary.com" in file_url:
+                parts = file_url.split("/upload/")
+                if len(parts) == 2:
+                    public_id_with_ext = parts[1].split("/", 1)[-1]
+                    public_id = os.path.splitext(public_id_with_ext)[0]
+                    resource_type = "image" if file_record.file_type.startswith("image/") else "raw"
+                    cloudinary.uploader.destroy(public_id, resource_type=resource_type)
         except Exception as e:
-            # Log error but continue with database deletion
-            print(f"Warning: Failed to delete physical file {file_record.file_path}: {e}")
+            print(f"Warning: Failed to delete file from Cloudinary: {e}")
         
         # Delete database record with both ORM and raw SQL
         try:
