@@ -35,18 +35,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
     const storedUser = localStorage.getItem('user');
-    
+
     if (storedToken && storedUser) {
       try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-        setToken(storedToken);
+        // Decode JWT and check expiry without a network call
+        const payload = JSON.parse(atob(storedToken.split('.')[1]));
+        const isExpired = payload.exp * 1000 < Date.now();
+
+        if (isExpired) {
+          // Token expired — clear and redirect to login
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('user');
+        } else {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setToken(storedToken);
+        }
       } catch (error) {
-        console.error('Error parsing stored user data:', error);
+        // Invalid token format — clear it
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
       }
     }
+
     setIsLoading(false);
   }, []);
 

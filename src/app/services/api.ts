@@ -45,14 +45,14 @@ export class ApiClient {
         } catch {
           errorData = { detail: errorText };
         }
-        
+
         console.error('API Error:', {
           endpoint,
           status: response.status,
           statusText: response.statusText,
           error: errorData
         });
-        
+
         throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
