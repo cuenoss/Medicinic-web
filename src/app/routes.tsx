@@ -26,7 +26,11 @@ export const router = createHashRouter([
   },
   {
     path: "/",
-    Component: MainLayout,
+    element: (
+      <ProtectedRoute>
+        <MainLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,
