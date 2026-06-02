@@ -7,8 +7,9 @@ class Consultation(Base):
     __tablename__ = "consultations"
 
     id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True, index=True)
     patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False)
-    
+
     # Basic Personal Information
     name = Column(String, nullable=False)
     age = Column(String, nullable=False)

@@ -10,6 +10,7 @@ class Patient(Base):
   __tablename__ = "patients"
 
   id = Column(Integer, primary_key=True, index=True)
+  doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True, index=True)
   full_name = Column(String, nullable=False)
   gender = Column(String, nullable=True)
   email = Column(String, nullable=True)

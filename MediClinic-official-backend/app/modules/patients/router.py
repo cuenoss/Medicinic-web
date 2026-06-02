@@ -5,6 +5,8 @@ from fastapi import HTTPException, Depends, APIRouter, UploadFile, File
 from fastapi.responses import FileResponse, RedirectResponse
 from typing import Optional, List
 from app.db import get_db
+from app.modules.auth.service import get_current_doctor
+from app.modules.auth.models import Doctor
 from .models import Patient, attached_files
 import os
 import uuid
@@ -60,11 +62,12 @@ async def list_patients(
     db: AsyncSession = Depends(get_db),
     filters: PatientSearchFilters = Depends(),
     page_size: int = 10,
-    page: int = 1
+    page: int = 1,
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> List[PatientResponse]:
     try:
-        query = select(Patient)
-        
+        query = select(Patient).where(Patient.doctor_id == current_doctor.id)
+
         if filters.name:
             query = query.where(Patient.full_name.ilike(f"%{filters.name}%"))
         if filters.email:
@@ -87,15 +90,21 @@ async def list_patients(
 @router.get("/{patient_id}", response_model=PatientResponse)
 async def get_patient(
     patient_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> PatientResponse:
     try:
-        result = await db.execute(select(Patient).where(Patient.id == patient_id))
+        result = await db.execute(
+            select(Patient).where(
+                Patient.id == patient_id,
+                Patient.doctor_id == current_doctor.id
+            )
+        )
         patient = result.scalars().first()
-        
+
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
-        
+
         return PatientResponse.from_orm(patient)
     except HTTPException:
         raise
@@ -106,13 +115,15 @@ async def get_patient(
 @router.post("/", response_model=PatientResponse)
 async def create_patient(
     patient_data: PatientCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> PatientResponse:
     try:
         patient_dict = patient_data.dict()
         current_date = datetime.utcnow().date()
         patient_dict["created_at"] = current_date
         patient_dict["updated_at"] = current_date
+        patient_dict["doctor_id"] = current_doctor.id
         
         # Process comma-separated fields
         patient_dict["allergies"] = process_comma_separated_field(patient_dict.get("allergies"))
@@ -135,15 +146,21 @@ async def create_patient(
 async def update_patient(
     patient_id: int,
     patient_data: PatientUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> PatientResponse:
     try:
-        result = await db.execute(select(Patient).where(Patient.id == patient_id))
+        result = await db.execute(
+            select(Patient).where(
+                Patient.id == patient_id,
+                Patient.doctor_id == current_doctor.id
+            )
+        )
         patient = result.scalars().first()
-        
+
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
-        
+
         update_data = patient_data.dict(exclude_unset=True)
         for key, value in update_data.items():
             if key in ["allergies", "chronic_conditions"]:
@@ -167,15 +184,21 @@ async def update_patient(
 @router.delete("/{patient_id}")
 async def delete_patient(
     patient_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> dict:
     try:
-        result = await db.execute(select(Patient).where(Patient.id == patient_id))
+        result = await db.execute(
+            select(Patient).where(
+                Patient.id == patient_id,
+                Patient.doctor_id == current_doctor.id
+            )
+        )
         patient = result.scalars().first()
-        
+
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
-        
+
         db.delete(patient)
         await db.commit()
         
@@ -192,11 +215,17 @@ async def delete_patient(
 @router.get("/{patient_id}/files", response_model=List[AttachedFileResponse])
 async def get_patient_files(
     patient_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> List[AttachedFileResponse]:
     try:
         print(f"DEBUG: Getting files for patient {patient_id}")
-        result = await db.execute(select(Patient).where(Patient.id == patient_id))
+        result = await db.execute(
+            select(Patient).where(
+                Patient.id == patient_id,
+                Patient.doctor_id == current_doctor.id
+            )
+        )
         patient = result.scalars().first()
         
         if not patient:
@@ -222,11 +251,17 @@ async def get_patient_files(
 async def get_patient_file(
     patient_id: int,
     file_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ):
     try:
-        # Validate patient exists
-        patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
+        # Validate patient exists and belongs to this doctor
+        patient_result = await db.execute(
+            select(Patient).where(
+                Patient.id == patient_id,
+                Patient.doctor_id == current_doctor.id
+            )
+        )
         patient = patient_result.scalars().first()
         
         if not patient:
@@ -256,11 +291,17 @@ async def get_patient_file(
 async def upload_patient_file(
     patient_id: int,
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> AttachedFileResponse:
     try:
-        # Validate patient exists
-        patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
+        # Validate patient exists and belongs to this doctor
+        patient_result = await db.execute(
+            select(Patient).where(
+                Patient.id == patient_id,
+                Patient.doctor_id == current_doctor.id
+            )
+        )
         patient = patient_result.scalars().first()
         
         if not patient:
@@ -332,11 +373,17 @@ async def upload_patient_file(
 async def delete_patient_file(
     patient_id: int,
     file_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> dict:
     try:
-        # Validate patient exists
-        patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
+        # Validate patient exists and belongs to this doctor
+        patient_result = await db.execute(
+            select(Patient).where(
+                Patient.id == patient_id,
+                Patient.doctor_id == current_doctor.id
+            )
+        )
         patient = patient_result.scalars().first()
         
         if not patient:
@@ -418,11 +465,22 @@ async def delete_patient_file(
 @router.post("/{patient_id}/files/refresh")
 async def refresh_patient_files(
     patient_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> dict:
     try:
         print(f"DEBUG: Refreshing files cache for patient {patient_id}")
-        
+
+        # Verify the patient belongs to this doctor
+        patient_result = await db.execute(
+            select(Patient).where(
+                Patient.id == patient_id,
+                Patient.doctor_id == current_doctor.id
+            )
+        )
+        if not patient_result.scalars().first():
+            raise HTTPException(status_code=404, detail="Patient not found")
+
         # Force a new database session to avoid any caching
         files_result = await db.execute(
             select(attached_files).where(attached_files.patient_id == patient_id)
@@ -444,9 +502,13 @@ async def refresh_patient_files(
 async def generate_prescription(
     patient_id: int,
     prescription_data: dict,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> PrescriptionResponse:
-    query=select(Patient).where(Patient.id == patient_id)
+    query = select(Patient).where(
+        Patient.id == patient_id,
+        Patient.doctor_id == current_doctor.id
+    )
     result = await db.execute(query)
     patient = result.scalars().first()
     if not patient:
@@ -469,12 +531,16 @@ async def generate_prescription(
 @router.get("/search/by-phone", response_model=List[PatientResponse])
 async def search_patient_by_phone(
     phone: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ) -> List[PatientResponse]:
     try:
-        # Search for patients with phone number containing the search term
+        # Search only within this doctor's own patients
         result = await db.execute(
-            select(Patient).where(Patient.phone.ilike(f"%{phone}%"))
+            select(Patient).where(
+                Patient.phone.ilike(f"%{phone}%"),
+                Patient.doctor_id == current_doctor.id
+            )
         )
         patients = result.scalars().all()
         

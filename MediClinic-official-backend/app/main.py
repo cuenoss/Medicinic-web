@@ -177,6 +177,36 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 print(f"Error checking/adding payment_method column: {e}")
         
+        # Multi-tenancy: add doctor_id to data tables and backfill legacy rows
+        async with engine.begin() as conn:
+            try:
+                # The first registered doctor inherits all pre-existing ("legacy") data
+                first_doctor_result = await conn.execute(text("SELECT MIN(id) FROM doctors"))
+                first_doctor_id = first_doctor_result.scalar()
+
+                for table_name in ["patients", "appointments", "consultations", "ordonnances", "expenses"]:
+                    col_check = await conn.execute(text(f"""
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_name = '{table_name}' AND column_name = 'doctor_id'
+                    """))
+
+                    if not col_check.fetchone():
+                        print(f"Adding doctor_id column to {table_name} table...")
+                        await conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN doctor_id INTEGER"))
+
+                        # Give every existing row to the first doctor so current data isn't lost
+                        if first_doctor_id is not None:
+                            await conn.execute(
+                                text(f"UPDATE {table_name} SET doctor_id = :doc WHERE doctor_id IS NULL"),
+                                {"doc": first_doctor_id},
+                            )
+                        print(f"Successfully added doctor_id to {table_name} (legacy rows -> doctor {first_doctor_id})")
+                    else:
+                        print(f"doctor_id column already exists in {table_name} table")
+            except Exception as e:
+                print(f"Error checking/adding doctor_id columns: {e}")
+
         print("Database tables ensured (create_all)")
     except Exception as e:
         print(f"Database connection failed: {e}")

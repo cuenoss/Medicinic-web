@@ -6,6 +6,8 @@ from app.db import get_db
 from .models import Appointment
 from .schemas import AppointmentCreate
 from app.modules.patients.models import Patient
+from app.modules.auth.service import get_current_doctor
+from app.modules.auth.models import Doctor
 from datetime import datetime
 from typing import Optional
 
@@ -15,16 +17,27 @@ router = APIRouter(tags=["appointments"])
 @router.post("/create")
 async def create_appointment(
     appointment: AppointmentCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ):
     try:
         patient = None
         if appointment.patient_id:
-            result = await db.execute(select(Patient).where(Patient.id == appointment.patient_id))
+            result = await db.execute(
+                select(Patient).where(
+                    Patient.id == appointment.patient_id,
+                    Patient.doctor_id == current_doctor.id
+                )
+            )
             patient = result.scalars().first()
 
         if not patient:
-            patient_result = await db.execute(select(Patient).where(Patient.phone == appointment.phone_number))
+            patient_result = await db.execute(
+                select(Patient).where(
+                    Patient.phone == appointment.phone_number,
+                    Patient.doctor_id == current_doctor.id
+                )
+            )
             patient = patient_result.scalars().first()
 
         current_date = datetime.utcnow().date()
@@ -32,6 +45,7 @@ async def create_appointment(
             patient = Patient(
                 full_name=appointment.patient_name,
                 phone=appointment.phone_number,
+                doctor_id=current_doctor.id,
                 created_at=current_date,
                 updated_at=current_date
             )
@@ -58,6 +72,7 @@ async def create_appointment(
 
         new_appointment = Appointment(
             patient_id=patient.id,
+            doctor_id=current_doctor.id,
             date=appointment.date,  # NEW: Add date field
             time=appointment.time,
             duration=appointment.duration,
@@ -83,12 +98,16 @@ async def create_appointment(
 
 #get all the appointments 
 @router.get("/all")
-async def get_appointments(db: AsyncSession = Depends(get_db)):
+async def get_appointments(
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
+):
     try:
         # Join with patients table to get patient name and phone
         result = await db.execute(
             select(Appointment, Patient)
             .join(Patient, Appointment.patient_id == Patient.id)
+            .where(Appointment.doctor_id == current_doctor.id)
         )
         
         # Format results to include patient info
@@ -112,17 +131,24 @@ async def get_appointments(db: AsyncSession = Depends(get_db)):
 
 #get appointments for a specific date
 @router.get("/date/{date}")
-async def get_appointments_by_date(date: str, db: AsyncSession = Depends(get_db)):
+async def get_appointments_by_date(
+    date: str,
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
+):
     try:
         # Convert string to date object for proper comparison
         from datetime import datetime
         date_obj = datetime.strptime(date, "%Y-%m-%d").date()
-        
+
         # Join with patients table to get patient name and phone
         result = await db.execute(
             select(Appointment, Patient)
             .join(Patient, Appointment.patient_id == Patient.id)
-            .where(Appointment.date == date_obj)
+            .where(
+                Appointment.date == date_obj,
+                Appointment.doctor_id == current_doctor.id
+            )
         )
         
         # Format results to include patient info
@@ -151,7 +177,8 @@ async def update_appointment(
     appointment_id: int,
     date: Optional[str] = Body(None, description="New date for appointment (YYYY-MM-DD)"),
     time: Optional[str] = Body(None, description="New time for appointment (HH:MM)"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
 ):
     # Build appointment_data dict from body parameters
     appointment_data = {}
@@ -161,9 +188,14 @@ async def update_appointment(
         appointment_data['time'] = time
     try:
         print(f"DEBUG: Updating appointment {appointment_id} with data: {appointment_data}")
-        
-        # Get existing appointment
-        result = await db.execute(select(Appointment).where(Appointment.id == appointment_id))
+
+        # Get existing appointment (only if it belongs to this doctor)
+        result = await db.execute(
+            select(Appointment).where(
+                Appointment.id == appointment_id,
+                Appointment.doctor_id == current_doctor.id
+            )
+        )
         appointment = result.scalar_one_or_none()
         
         if appointment is None:
@@ -222,8 +254,17 @@ async def update_appointment(
 
 #remove an appointment by id
 @router.delete("/{appointment_id}")
-async def delete_appointment(appointment_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Appointment).where(Appointment.id == appointment_id))
+async def delete_appointment(
+    appointment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor)
+):
+    result = await db.execute(
+        select(Appointment).where(
+            Appointment.id == appointment_id,
+            Appointment.doctor_id == current_doctor.id
+        )
+    )
     appointment = result.scalar_one_or_none()
     if appointment is None:
         return {"message": "Appointment not found"}
