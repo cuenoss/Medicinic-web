@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.modules.appointments.models import Appointment
 from app.modules.patients.models import Patient
+from app.modules.auth.service import get_current_doctor
+from app.modules.auth.models import Doctor
 from .models import Expense
 from .schemas import ExpenseCreate, ExpenseResponse, ExpenseListResponse
 
@@ -22,10 +24,15 @@ def _normalize_expense_date_string(raw: str) -> str:
 
 
 @router.post("/expenses/", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
-async def create_expense(expense: ExpenseCreate, db: AsyncSession = Depends(get_db)):
+async def create_expense(
+    expense: ExpenseCreate,
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+):
     data = expense.dict()
     data["amount"] = int(round(data["amount"]))
     data["date"] = _normalize_expense_date_string(data.get("date") or "")
+    data["doctor_id"] = current_doctor.id
     new_expense = Expense(**data)
     db.add(new_expense)
     await db.commit()
@@ -34,7 +41,10 @@ async def create_expense(expense: ExpenseCreate, db: AsyncSession = Depends(get_
 
 
 @router.get("/expenses/", response_model=ExpenseListResponse)
-async def expense_stats(db: AsyncSession = Depends(get_db)):
+async def expense_stats(
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+):
     """
     Calculate revenue from appointments with payment_amount and expenses by type.
     Revenue = sum of payment_amount from appointments with payment_amount is not None
@@ -44,6 +54,7 @@ async def expense_stats(db: AsyncSession = Depends(get_db)):
     # Calculate today's revenue from paid appointments
     result = await db.execute(
         select(func.coalesce(func.cast(func.sum(Appointment.payment_amount), Float), 0))
+        .where(Appointment.doctor_id == current_doctor.id)
         .where(Appointment.payment_amount.isnot(None))
         .where(func.cast(Appointment.date, String).like(f"{today}%"))
     )
@@ -52,6 +63,7 @@ async def expense_stats(db: AsyncSession = Depends(get_db)):
     # Calculate total revenue from all paid appointments
     result = await db.execute(
         select(func.coalesce(func.cast(func.sum(Appointment.payment_amount), Float), 0))
+        .where(Appointment.doctor_id == current_doctor.id)
         .where(Appointment.payment_amount.isnot(None))
     )
     total_revenue = result.scalar_one() or 0
@@ -59,12 +71,16 @@ async def expense_stats(db: AsyncSession = Depends(get_db)):
     # Calculate today's expenses
     result = await db.execute(
         select(func.coalesce(func.sum(Expense.amount), 0))
+        .where(Expense.doctor_id == current_doctor.id)
         .where(func.cast(Expense.date, String).like(f"{today}%"))
     )
     todays_expenses = result.scalar_one() or 0
 
     # Calculate total expenses
-    result = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)))
+    result = await db.execute(
+        select(func.coalesce(func.sum(Expense.amount), 0))
+        .where(Expense.doctor_id == current_doctor.id)
+    )
     total_expenses = result.scalar_one() or 0
 
     return ExpenseListResponse(
@@ -78,19 +94,25 @@ async def expense_stats(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/overview/")
-async def monthly_overview(db: AsyncSession = Depends(get_db)) -> Dict[str, float]:
+async def monthly_overview(
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+) -> Dict[str, float]:
     cutoff_date = date.today() - timedelta(days=30)
-    
+
     # Calculate monthly expenses
     cutoff_str = cutoff_date.isoformat()
     result = await db.execute(
-        select(func.coalesce(func.sum(Expense.amount), 0)).where(Expense.date >= cutoff_str)
+        select(func.coalesce(func.sum(Expense.amount), 0))
+        .where(Expense.doctor_id == current_doctor.id)
+        .where(Expense.date >= cutoff_str)
     )
     expenses = result.scalar_one() or 0
-    
+
     # Calculate monthly revenue from paid appointments
     result = await db.execute(
         select(func.coalesce(func.cast(func.sum(Appointment.payment_amount), Float), 0))
+        .where(Appointment.doctor_id == current_doctor.id)
         .where(Appointment.payment_amount.isnot(None))
         .where(Appointment.date >= cutoff_date)
     )
@@ -100,7 +122,10 @@ async def monthly_overview(db: AsyncSession = Depends(get_db)) -> Dict[str, floa
 
 
 @router.get("/monthly-data/")
-async def get_monthly_data(db: AsyncSession = Depends(get_db)) -> Dict[str, List[Dict[str, Any]]]:
+async def get_monthly_data(
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+) -> Dict[str, List[Dict[str, Any]]]:
     """Get revenue and expenses data for the past 12 months"""
     monthly_data = []
     current_date = date.today()
@@ -137,14 +162,16 @@ async def get_monthly_data(db: AsyncSession = Depends(get_db)) -> Dict[str, List
         # Calculate expenses for this month
         result = await db.execute(
             select(func.coalesce(func.sum(Expense.amount), 0))
+            .where(Expense.doctor_id == current_doctor.id)
             .where(Expense.date >= month_start_str)
             .where(Expense.date <= month_end_str)
         )
         expenses = result.scalar_one() or 0
-        
+
         # Calculate revenue for this month
         result = await db.execute(
             select(func.coalesce(func.cast(func.sum(Appointment.payment_amount), Float), 0))
+            .where(Appointment.doctor_id == current_doctor.id)
             .where(Appointment.payment_amount.isnot(None))
             .where(Appointment.date >= month_start)
             .where(Appointment.date <= month_end)
@@ -163,16 +190,22 @@ async def get_monthly_data(db: AsyncSession = Depends(get_db)) -> Dict[str, List
 
 
 @router.get("/expenses/category/")
-async def expenses_by_category(db: AsyncSession = Depends(get_db)) -> Dict[str, float]:
+async def expenses_by_category(
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+) -> Dict[str, float]:
     cutoff_date = date.today() - timedelta(days=30)
     cutoff_str = cutoff_date.isoformat()
-    cat_result = await db.execute(select(Expense.category).distinct())
+    cat_result = await db.execute(
+        select(Expense.category).where(Expense.doctor_id == current_doctor.id).distinct()
+    )
     categories = [row[0] for row in cat_result.all() if row[0]]
 
     out: Dict[str, float] = {}
     for category in categories:
         result = await db.execute(
             select(func.coalesce(func.sum(Expense.amount), 0)).where(
+                Expense.doctor_id == current_doctor.id,
                 Expense.category == category,
                 Expense.date >= cutoff_str,
             )
@@ -193,19 +226,26 @@ def _expense_to_dict(e: Expense) -> Dict[str, Any]:
 
 
 @router.get("/transactions/recent/")
-async def recent_transactions(db: AsyncSession = Depends(get_db)) -> Dict[str, List[Any]]:
+async def recent_transactions(
+    db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
+) -> Dict[str, List[Any]]:
     cutoff_date = date.today() - timedelta(days=3)
     cutoff_str = cutoff_date.isoformat()
-    
+
     # Get recent expenses
     exp_result = await db.execute(
-        select(Expense).where(Expense.date >= cutoff_str).order_by(Expense.date.desc())
+        select(Expense)
+        .where(Expense.doctor_id == current_doctor.id)
+        .where(Expense.date >= cutoff_str)
+        .order_by(Expense.date.desc())
     )
     expenses = [_expense_to_dict(e) for e in exp_result.scalars().all()]
 
     # Get recent paid appointments as revenue
     appt_result = await db.execute(
         select(Appointment)
+        .where(Appointment.doctor_id == current_doctor.id)
         .where(Appointment.payment_amount.isnot(None))
         .where(Appointment.date >= cutoff_date)
         .order_by(Appointment.date.desc())

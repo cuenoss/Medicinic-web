@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 
 from app.db import Base
 
@@ -27,6 +27,7 @@ class Expense(Base):
     __tablename__ = "expenses"
 
     id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True, index=True)
     category = Column(String, index=True)
     amount = Column(Integer, nullable=False)
     description = Column(String, nullable=True)

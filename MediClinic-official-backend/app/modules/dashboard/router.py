@@ -9,6 +9,8 @@ from app.db import get_db
 from app.modules.patients.models import Patient
 from app.modules.appointments.models import Appointment
 from app.modules.consultations.models import Consultation
+from app.modules.auth.service import get_current_doctor
+from app.modules.auth.models import Doctor
 from .schemas import (
     DashboardStatsResponse,
     DashboardAppointmentItem,
@@ -27,31 +29,48 @@ def _patient_age(patient: Patient) -> int:
 
 @router.get("/overview", response_model=DashboardOverviewResponse)
 async def get_dashboard_overview(
-    doctor_id: Optional[int] = Query(None, description="Reserved for future doctor-scoped stats"),
     db: AsyncSession = Depends(get_db),
+    current_doctor: Doctor = Depends(get_current_doctor),
 ):
     """Dashboard overview backed by Patient, Appointment, and Consultation tables."""
+    doctor_id = current_doctor.id
     today_d = date.today()
     today_prefix = today_d.isoformat()
     first_of_month = today_d.replace(day=1)
 
-    total_patients = (await db.execute(select(func.count(Patient.id)))).scalar_one() or 0
+    total_patients = (
+        await db.execute(
+            select(func.count(Patient.id)).where(Patient.doctor_id == doctor_id)
+        )
+    ).scalar_one() or 0
 
-    consultations_total = (await db.execute(select(func.count(Consultation.id)))).scalar_one() or 0
+    consultations_total = (
+        await db.execute(
+            select(func.count(Consultation.id)).where(Consultation.doctor_id == doctor_id)
+        )
+    ).scalar_one() or 0
 
     today_appt_count = (
         await db.execute(
-            select(func.count(Appointment.id)).where(Appointment.time.like(f"{today_prefix}%"))
+            select(func.count(Appointment.id))
+            .where(Appointment.doctor_id == doctor_id)
+            .where(Appointment.time.like(f"{today_prefix}%"))
         )
     ).scalar_one() or 0
 
     active_patients = (
-        await db.execute(select(func.count(Patient.id)).where(Patient.last_visit.isnot(None)))
+        await db.execute(
+            select(func.count(Patient.id))
+            .where(Patient.doctor_id == doctor_id)
+            .where(Patient.last_visit.isnot(None))
+        )
     ).scalar_one() or 0
 
     new_patients_this_month = (
         await db.execute(
-            select(func.count(Patient.id)).where(Patient.created_at >= first_of_month)
+            select(func.count(Patient.id))
+            .where(Patient.doctor_id == doctor_id)
+            .where(Patient.created_at >= first_of_month)
         )
     ).scalar_one() or 0
 
@@ -68,6 +87,7 @@ async def get_dashboard_overview(
 
     appt_result = await db.execute(
         select(Appointment)
+        .where(Appointment.doctor_id == doctor_id)
         .where(Appointment.time.like(f"{today_prefix}%"))
         .order_by(Appointment.time)
         .options(selectinload(Appointment.patient))
@@ -87,7 +107,10 @@ async def get_dashboard_overview(
     ]
 
     recent_result = await db.execute(
-        select(Patient).order_by(Patient.updated_at.desc(), Patient.id.desc()).limit(5)
+        select(Patient)
+        .where(Patient.doctor_id == doctor_id)
+        .order_by(Patient.updated_at.desc(), Patient.id.desc())
+        .limit(5)
     )
     recent_rows = recent_result.scalars().all()
     recent_patients = [
