@@ -74,6 +74,21 @@ async def list_patients(
             query = query.where(Patient.email.ilike(f"%{filters.email}%"))
         if filters.phone:
             query = query.where(Patient.phone.ilike(f"%{filters.phone}%"))
+        if filters.gender:
+            query = query.where(Patient.gender.ilike(f"%{filters.gender}%"))
+        if filters.allergies:
+            query = query.where(Patient.allergies.ilike(f"%{filters.allergies}%"))
+        if filters.chronic_conditions:
+            query = query.where(Patient.chronic_conditions.ilike(f"%{filters.chronic_conditions}%"))
+        if filters.age_min is not None or filters.age_max is not None:
+            from datetime import date, timedelta
+            today = date.today()
+            if filters.age_max is not None:
+                min_dob = today.replace(year=today.year - filters.age_max - 1)
+                query = query.where(Patient.date_of_birth >= min_dob)
+            if filters.age_min is not None:
+                max_dob = today.replace(year=today.year - filters.age_min)
+                query = query.where(Patient.date_of_birth <= max_dob)
         
         # Apply pagination
         offset = (page - 1) * page_size

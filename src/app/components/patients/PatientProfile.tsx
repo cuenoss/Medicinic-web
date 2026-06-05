@@ -27,9 +27,11 @@ import { patientsService, Patient, PatientUpdate, AttachedFile } from '../../ser
 import { consultationsService, Consultation } from '../../services/consultations';
 import { ordonnancesService, Ordonnance } from '../../services/ordonnances';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export function PatientProfile() {
   const { user, token } = useAuth();
+  const { t } = useTranslation();
   const { id } = useParams();
   const patientId = id ? parseInt(id) : null;
   
@@ -314,6 +316,17 @@ export function PatientProfile() {
     } catch (error) {
       console.error('Failed to delete file:', error);
       alert('Failed to delete file. Please try again.');
+    }
+  };
+
+  const handleDeleteConsultation = async (consultationId: number) => {
+    if (!window.confirm('Delete this consultation?')) return;
+    try {
+      await consultationsService.deleteConsultation(consultationId);
+      setConsultations(prev => prev.filter(c => c.id !== consultationId));
+    } catch (error) {
+      console.error('Failed to delete consultation:', error);
+      alert('Failed to delete consultation. Please try again.');
     }
   };
 
@@ -799,22 +812,22 @@ ${ordonnanceContent}
         {/* Consultations Tab */}
         <TabsContent value="consultations" className="mt-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-slate-800">Consultation History</h3>
+            <h3 className="font-semibold text-slate-800">{t('patients.consultations.title')}</h3>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowConsultationModal(true)}>
               <FileText className="w-4 h-4 mr-2" />
-              New Consultation
+              {t('patients.consultations.newConsultation')}
             </Button>
           </div>
           <div className="space-y-3">
             {loading ? (
               <div className="text-center py-8 text-slate-500">
-                Loading consultations...
+                {t('patients.consultations.loading')}
               </div>
             ) : consultations.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>No consultations yet</p>
-                <p className="text-sm">Click "New Consultation" to add the first consultation</p>
+                <p>{t('patients.consultations.noConsultations')}</p>
+                <p className="text-sm">{t('patients.consultations.clickNew')}</p>
               </div>
             ) : (
               consultations.map((consultation) => (
@@ -836,9 +849,19 @@ ${ordonnanceContent}
                       <span>{consultation.doctor}</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => handleViewConsultationDetails(consultation)}>
-                    View Details
-                  </Button>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => handleViewConsultationDetails(consultation)}>
+                      {t('patients.consultations.viewDetails')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={() => handleDeleteConsultation(consultation.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             )))}

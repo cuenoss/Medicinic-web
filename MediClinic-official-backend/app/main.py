@@ -238,6 +238,8 @@ DEFAULT_ORIGINS = [
     "http://127.0.0.1:3000",
     "file://",
     "app://",
+    "https://mediclinic-frontend.onrender.com",
+    "https://mediclinic-backend-gps2.onrender.com",
 ]
 all_origins = list(set(DEFAULT_ORIGINS + [o.strip() for o in ALLOWED_ORIGINS if o.strip()]))
 

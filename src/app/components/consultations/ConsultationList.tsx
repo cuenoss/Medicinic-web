@@ -4,9 +4,11 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export function ConsultationList() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { t } = useTranslation();
 
   const consultations = [
     {
@@ -65,9 +67,7 @@ export function ConsultationList() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-800 mb-2">
-            Consultations
-          </h1>
+          <h1 className="text-3xl font-semibold text-slate-800 mb-2">{t('patients.tabs.consultations')}</h1>
           <p className="text-slate-600">{consultations.length} total consultations</p>
         </div>
         <Link to="/consultations/new">
@@ -83,7 +83,7 @@ export function ConsultationList() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <Input
-            placeholder="Search by patient name..."
+            placeholder={t('patients.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -147,7 +147,7 @@ export function ConsultationList() {
 
       {filteredConsultations.length === 0 && (
         <Card className="p-12 text-center">
-          <p className="text-slate-600">No consultations found</p>
+          <p className="text-slate-600">{t('patients.consultations.noConsultations")}</p>
         </Card>
       )}
     </div>

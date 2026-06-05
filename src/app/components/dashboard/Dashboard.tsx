@@ -17,6 +17,7 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Avatar } from '../ui/avatar';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { appointmentsService } from '../../services/appointments';
 import { patientsService } from '../../services/patients';
@@ -24,6 +25,7 @@ import { financeService } from '../../services/finance';
 
 export function Dashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -88,25 +90,25 @@ export function Dashboard() {
   }, []);
   const statsCards = [
     {
-      label: 'Total Patients',
+      label: t('dashboard.totalPatients'),
       value: dashboardStats.totalPatients,
       icon: Users,
       color: 'bg-blue-500',
     },
     {
-      label: "Today's Appointments",
+      label: t('dashboard.todayAppointments'),
       value: dashboardStats.todayAppointments,
       icon: Calendar,
       color: 'bg-green-500',
     },
     {
-      label: 'Total Revenue',
+      label: t('dashboard.totalRevenue'),
       value: `${dashboardStats.totalRevenue} DA`,
       icon: TrendingUp,
       color: 'bg-purple-500',
     },
     {
-      label: 'Total Expense',
+      label: t('dashboard.totalExpense'),
       value: `${dashboardStats.totalExpense || '0.00'} DA`,
       icon: DollarSign,
       color: 'bg-red-500',
@@ -171,9 +173,8 @@ export function Dashboard() {
         const patientData = {
           full_name: newPatient.name,
           email: newPatient.email,
-          phone_number: newPatient.phone, // Fixed: phone_number instead of phone
+          phone: newPatient.phone,
           date_of_birth: new Date(new Date().getFullYear() - parseInt(newPatient.age), 0, 1).toISOString().split('T')[0],
-          // Optional fields
           address: '',
           blood_type: '',
           allergies: '',
@@ -181,10 +182,23 @@ export function Dashboard() {
         };
 
         console.log('Creating patient with data:', patientData);
-        await api.createPatient(patientData);
-        
-        // Create appointment (mock for now - replace with real appointments API)
-        console.log('Adding new patient appointment:', patientData);
+        const createdPatient = await api.createPatient(patientData);
+
+        // Create appointment for the patient
+        try {
+          await appointmentsService.createAppointment({
+            patient_id: (createdPatient as any).id,
+            patient_name: newPatient.name,
+            phone_number: newPatient.phone,
+            date: newPatient.day,
+            time: newPatient.time,
+            type: 'Check-up',
+            duration: 30,
+            payment_amount: parseFloat(newPatient.amount) || 0,
+          });
+        } catch (aptErr) {
+          console.warn('Appointment creation failed, patient was still created:', aptErr);
+        }
         
         // Refresh dashboard data
         const fetchDashboardData = async () => {
@@ -236,7 +250,7 @@ export function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-800 mb-2">Dashboard</h1>
+        <h1 className="text-3xl font-semibold text-slate-800 mb-2">{t('dashboard.title')}</h1>
         <p className="text-slate-600">Welcome back, {user?.fullName || 'Doctor'}</p>
       </div>
 
@@ -394,9 +408,9 @@ export function Dashboard() {
                       className="flex-1 outline-none text-slate-800 bg-transparent"
                     >
                       <option value="">Select...</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                      <option value="Male">{t('dashboard.male')}</option>
+                      <option value="Female">{t('dashboard.female')}</option>
+                      <option value="Other">{t('dashboard.other')}</option>
                     </select>
                   </div>
                 </div>

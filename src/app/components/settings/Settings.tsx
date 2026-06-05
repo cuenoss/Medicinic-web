@@ -1,15 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Building,
-  Clock,
-  Bell,
-  Database,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Save,
-  Globe,
+  Building, Clock, Bell, Database, User, Mail, Phone, Globe, Save,
 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -17,14 +8,25 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
+import { useAuth } from '../../contexts/AuthContext';
+import { settingsService } from '../../services/settings';
+import { useTranslation } from 'react-i18next';
 
 export function Settings() {
+  const { user } = useAuth();
+  const { t } = useTranslation();
+
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingClinic, setSavingClinic] = useState(false);
+  const [savingHours, setSavingHours] = useState(false);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+
   const [clinicInfo, setClinicInfo] = useState({
-    name: 'MediClinic Health Center',
-    address: '123 Medical Plaza, Suite 100, New York, NY 10001',
-    phone: '+1 (555) 000-0000',
-    email: 'info@mediclinic.com',
-    website: 'www.mediclinic.com',
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
   });
 
   const [workingHours, setWorkingHours] = useState({
@@ -45,102 +47,198 @@ export function Settings() {
   });
 
   const [profile, setProfile] = useState({
-    fullName: 'Dr. John Smith',
+    fullName: '',
     specialization: 'General Practitioner',
-    license: 'MD-123456',
-    email: 'dr.smith@mediclinic.com',
-    phone: '+1 (555) 123-4567',
+    license: '',
+    email: '',
+    phone: '',
   });
 
-  const handleSaveClinic = () => {
-    alert('Clinic information saved successfully!');
+  // Load settings from API on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setLoadingSettings(true);
+        // Initialize defaults first (no-op if already initialized)
+        await settingsService.initializeDefaults().catch(() => {});
+        const data = await settingsService.getAllSettings();
+
+        const val = (key: string) => data[key]?.value ?? data[key] ?? '';
+
+        setClinicInfo({
+          name: val('clinic_name') || 'MediClinic Health Center',
+          address: val('clinic_address') || '',
+          phone: val('clinic_phone') || '',
+          email: val('clinic_email') || '',
+          website: val('clinic_website') || '',
+        });
+
+        const wh = val('working_hours');
+        if (wh && typeof wh === 'object') {
+          setWorkingHours({
+            monday: wh.monday ? `${wh.monday.start || '09:00'} - ${wh.monday.end || '17:00'}` : '09:00 AM - 05:00 PM',
+            tuesday: wh.tuesday ? `${wh.tuesday.start || '09:00'} - ${wh.tuesday.end || '17:00'}` : '09:00 AM - 05:00 PM',
+            wednesday: wh.wednesday ? `${wh.wednesday.start || '09:00'} - ${wh.wednesday.end || '17:00'}` : '09:00 AM - 05:00 PM',
+            thursday: wh.thursday ? `${wh.thursday.start || '09:00'} - ${wh.thursday.end || '17:00'}` : '09:00 AM - 05:00 PM',
+            friday: wh.friday ? `${wh.friday.start || '09:00'} - ${wh.friday.end || '17:00'}` : '09:00 AM - 05:00 PM',
+            saturday: wh.saturday ? `${wh.saturday.start || '09:00'} - ${wh.saturday.end || '13:00'}` : '10:00 AM - 02:00 PM',
+            sunday: wh.sunday?.closed !== false ? 'Closed' : `${wh.sunday.start || ''} - ${wh.sunday.end || ''}`,
+          });
+        }
+
+        const ns = val('notification_settings');
+        if (ns && typeof ns === 'object') {
+          setNotifications({
+            emailNotifications: ns.email_notifications ?? true,
+            smsNotifications: ns.sms_notifications ?? false,
+            appointmentReminders: ns.appointment_reminders ?? true,
+            paymentAlerts: ns.payment_alerts ?? true,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+
+    // Pre-fill profile from auth context
+    if (user) {
+      setProfile(p => ({
+        ...p,
+        fullName: user.fullName || '',
+        email: user.email || '',
+      }));
+    }
+
+    loadSettings();
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      await settingsService.bulkUpdate({
+        doctor_full_name: profile.fullName,
+        doctor_specialization: profile.specialization,
+        doctor_license: profile.license,
+        doctor_email: profile.email,
+        doctor_phone: profile.phone,
+      });
+      alert(t('settings.saved'));
+    } catch (err) {
+      console.error('Failed to save profile:', err);
+      alert(t('common.error'));
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
-  const handleSaveProfile = () => {
-    alert('Profile updated successfully!');
+  const handleSaveClinic = async () => {
+    setSavingClinic(true);
+    try {
+      await settingsService.bulkUpdate({
+        clinic_name: clinicInfo.name,
+        clinic_address: clinicInfo.address,
+        clinic_phone: clinicInfo.phone,
+        clinic_email: clinicInfo.email,
+        clinic_website: clinicInfo.website,
+      });
+      alert(t('settings.saved'));
+    } catch (err) {
+      console.error('Failed to save clinic info:', err);
+      alert(t('common.error'));
+    } finally {
+      setSavingClinic(false);
+    }
   };
 
-  const handleBackup = (type: string) => {
-    alert(`${type} backup initiated...`);
+  const handleSaveHours = async () => {
+    setSavingHours(true);
+    try {
+      const parseHours = (val: string) => {
+        if (!val || val.toLowerCase() === 'closed') return { start: null, end: null, closed: true };
+        const parts = val.split('-').map(s => s.trim());
+        return { start: parts[0] || null, end: parts[1] || null, closed: false };
+      };
+      await settingsService.updateSetting('working_hours', {
+        monday: parseHours(workingHours.monday),
+        tuesday: parseHours(workingHours.tuesday),
+        wednesday: parseHours(workingHours.wednesday),
+        thursday: parseHours(workingHours.thursday),
+        friday: parseHours(workingHours.friday),
+        saturday: parseHours(workingHours.saturday),
+        sunday: parseHours(workingHours.sunday),
+      });
+      alert(t('settings.saved'));
+    } catch (err) {
+      console.error('Failed to save hours:', err);
+      alert(t('common.error'));
+    } finally {
+      setSavingHours(false);
+    }
   };
+
+  const handleSaveNotifications = async () => {
+    try {
+      await settingsService.updateSetting('notification_settings', {
+        email_notifications: notifications.emailNotifications,
+        sms_notifications: notifications.smsNotifications,
+        appointment_reminders: notifications.appointmentReminders,
+        payment_alerts: notifications.paymentAlerts,
+      });
+    } catch (err) {
+      console.error('Failed to save notifications:', err);
+    }
+  };
+
+  if (loadingSettings) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <p className="text-slate-500">{t('common.loading')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-800 mb-2">Settings</h1>
-        <p className="text-slate-600">Manage your clinic and account settings</p>
+        <h1 className="text-3xl font-semibold text-slate-800 mb-2">{t('settings.title')}</h1>
+        <p className="text-slate-600">{t('settings.subtitle')}</p>
       </div>
 
       {/* User Profile */}
       <Card className="overflow-hidden">
-        <div className="bg-blue-600 text-white px-6 py-4">
-          <div className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">User Profile</h2>
-          </div>
+        <div className="bg-blue-600 text-white px-6 py-4 flex items-center gap-2">
+          <User className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">{t('settings.profile')}</h2>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={profile.fullName}
-                onChange={(e) =>
-                  setProfile({ ...profile, fullName: e.target.value })
-                }
-              />
+              <Label>{t('settings.fullName')}</Label>
+              <Input value={profile.fullName} onChange={(e) => setProfile({ ...profile, fullName: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="specialization">Specialization</Label>
-              <Input
-                id="specialization"
-                value={profile.specialization}
-                onChange={(e) =>
-                  setProfile({ ...profile, specialization: e.target.value })
-                }
-              />
+              <Label>{t('settings.specialization')}</Label>
+              <Input value={profile.specialization} onChange={(e) => setProfile({ ...profile, specialization: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="license">Medical License</Label>
-              <Input
-                id="license"
-                value={profile.license}
-                onChange={(e) =>
-                  setProfile({ ...profile, license: e.target.value })
-                }
-              />
+              <Label>{t('settings.medicalLicense')}</Label>
+              <Input value={profile.license} onChange={(e) => setProfile({ ...profile, license: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profileEmail">Email</Label>
-              <Input
-                id="profileEmail"
-                type="email"
-                value={profile.email}
-                onChange={(e) =>
-                  setProfile({ ...profile, email: e.target.value })
-                }
-              />
+              <Label>{t('settings.email')}</Label>
+              <Input type="email" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profilePhone">Phone</Label>
-              <Input
-                id="profilePhone"
-                value={profile.phone}
-                onChange={(e) =>
-                  setProfile({ ...profile, phone: e.target.value })
-                }
-              />
+              <Label>{t('settings.phone')}</Label>
+              <Input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
             </div>
           </div>
           <div className="flex justify-end pt-4">
-            <Button
-              onClick={handleSaveProfile}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={handleSaveProfile} className="bg-blue-600 hover:bg-blue-700" disabled={savingProfile}>
               <Save className="w-4 h-4 mr-2" />
-              Save Profile
+              {savingProfile ? t('settings.saving') : t('settings.saveProfile')}
             </Button>
           </div>
         </div>
@@ -148,86 +246,46 @@ export function Settings() {
 
       {/* Clinic Information */}
       <Card className="overflow-hidden">
-        <div className="bg-blue-600 text-white px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Building className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Clinic Information</h2>
-          </div>
+        <div className="bg-blue-600 text-white px-6 py-4 flex items-center gap-2">
+          <Building className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">{t('settings.clinicInfo')}</h2>
         </div>
         <div className="p-6 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="clinicName">Clinic Name</Label>
-            <Input
-              id="clinicName"
-              value={clinicInfo.name}
-              onChange={(e) =>
-                setClinicInfo({ ...clinicInfo, name: e.target.value })
-              }
-            />
+            <Label>{t('settings.clinicName')}</Label>
+            <Input value={clinicInfo.name} onChange={(e) => setClinicInfo({ ...clinicInfo, name: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Textarea
-              id="address"
-              value={clinicInfo.address}
-              onChange={(e) =>
-                setClinicInfo({ ...clinicInfo, address: e.target.value })
-              }
-              rows={2}
-            />
+            <Label>{t('settings.address')}</Label>
+            <Textarea value={clinicInfo.address} onChange={(e) => setClinicInfo({ ...clinicInfo, address: e.target.value })} rows={2} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="clinicPhone">Phone</Label>
+              <Label>{t('settings.phone')}</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input
-                  id="clinicPhone"
-                  value={clinicInfo.phone}
-                  onChange={(e) =>
-                    setClinicInfo({ ...clinicInfo, phone: e.target.value })
-                  }
-                  className="pl-10"
-                />
+                <Input value={clinicInfo.phone} onChange={(e) => setClinicInfo({ ...clinicInfo, phone: e.target.value })} className="pl-10" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="clinicEmail">Email</Label>
+              <Label>{t('settings.email')}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input
-                  id="clinicEmail"
-                  type="email"
-                  value={clinicInfo.email}
-                  onChange={(e) =>
-                    setClinicInfo({ ...clinicInfo, email: e.target.value })
-                  }
-                  className="pl-10"
-                />
+                <Input type="email" value={clinicInfo.email} onChange={(e) => setClinicInfo({ ...clinicInfo, email: e.target.value })} className="pl-10" />
               </div>
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
+            <Label>{t('settings.website')}</Label>
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <Input
-                id="website"
-                value={clinicInfo.website}
-                onChange={(e) =>
-                  setClinicInfo({ ...clinicInfo, website: e.target.value })
-                }
-                className="pl-10"
-              />
+              <Input value={clinicInfo.website} onChange={(e) => setClinicInfo({ ...clinicInfo, website: e.target.value })} className="pl-10" />
             </div>
           </div>
           <div className="flex justify-end pt-4">
-            <Button
-              onClick={handleSaveClinic}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={handleSaveClinic} className="bg-blue-600 hover:bg-blue-700" disabled={savingClinic}>
               <Save className="w-4 h-4 mr-2" />
-              Save Changes
+              {savingClinic ? t('settings.saving') : t('settings.saveClinic')}
             </Button>
           </div>
         </div>
@@ -235,149 +293,89 @@ export function Settings() {
 
       {/* Working Hours */}
       <Card className="overflow-hidden">
-        <div className="bg-blue-600 text-white px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Working Hours</h2>
-          </div>
+        <div className="bg-blue-600 text-white px-6 py-4 flex items-center gap-2">
+          <Clock className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">{t('settings.workingHours')}</h2>
         </div>
         <div className="p-6 space-y-3">
           {Object.entries(workingHours).map(([day, hours]) => (
             <div key={day} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-              <span className="font-medium text-slate-700 capitalize w-32">
-                {day}
-              </span>
-              <Input
-                value={hours}
-                onChange={(e) =>
-                  setWorkingHours({ ...workingHours, [day]: e.target.value })
-                }
-                className="max-w-xs"
-              />
+              <span className="font-medium text-slate-700 capitalize w-32">{day}</span>
+              <Input value={hours} onChange={(e) => setWorkingHours({ ...workingHours, [day]: e.target.value })} className="max-w-xs" />
             </div>
           ))}
           <div className="flex justify-end pt-4">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleSaveHours} className="bg-blue-600 hover:bg-blue-700" disabled={savingHours}>
               <Save className="w-4 h-4 mr-2" />
-              Save Hours
+              {savingHours ? t('settings.saving') : t('settings.saveHours')}
             </Button>
           </div>
         </div>
       </Card>
 
-      {/* Notification Settings */}
+      {/* Notifications */}
       <Card className="overflow-hidden">
-        <div className="bg-blue-600 text-white px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Bell className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Notification Settings</h2>
-          </div>
+        <div className="bg-blue-600 text-white px-6 py-4 flex items-center gap-2">
+          <Bell className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">{t('settings.notifications')}</h2>
         </div>
         <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium text-slate-800">Email Notifications</p>
-              <p className="text-sm text-slate-600">
-                Receive notifications via email
-              </p>
+          {[
+            { key: 'emailNotifications', label: t('settings.emailNotifications'), desc: t('settings.emailNotificationsDesc') },
+            { key: 'smsNotifications', label: t('settings.smsNotifications'), desc: t('settings.smsNotificationsDesc') },
+            { key: 'appointmentReminders', label: t('settings.appointmentReminders'), desc: t('settings.appointmentRemindersDesc') },
+            { key: 'paymentAlerts', label: t('settings.paymentAlerts'), desc: t('settings.paymentAlertsDesc') },
+          ].map(({ key, label, desc }) => (
+            <div key={key} className="flex items-center justify-between py-3">
+              <div>
+                <p className="font-medium text-slate-800">{label}</p>
+                <p className="text-sm text-slate-600">{desc}</p>
+              </div>
+              <Switch
+                checked={notifications[key as keyof typeof notifications] as boolean}
+                onCheckedChange={(checked) => {
+                  const updated = { ...notifications, [key]: checked };
+                  setNotifications(updated);
+                  // Save immediately on toggle
+                  settingsService.updateSetting('notification_settings', {
+                    email_notifications: updated.emailNotifications,
+                    sms_notifications: updated.smsNotifications,
+                    appointment_reminders: updated.appointmentReminders,
+                    payment_alerts: updated.paymentAlerts,
+                  }).catch(console.error);
+                }}
+              />
             </div>
-            <Switch
-              checked={notifications.emailNotifications}
-              onCheckedChange={(checked) =>
-                setNotifications({ ...notifications, emailNotifications: checked })
-              }
-            />
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium text-slate-800">SMS Notifications</p>
-              <p className="text-sm text-slate-600">
-                Receive notifications via text message
-              </p>
-            </div>
-            <Switch
-              checked={notifications.smsNotifications}
-              onCheckedChange={(checked) =>
-                setNotifications({ ...notifications, smsNotifications: checked })
-              }
-            />
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium text-slate-800">Appointment Reminders</p>
-              <p className="text-sm text-slate-600">
-                Get reminders for upcoming appointments
-              </p>
-            </div>
-            <Switch
-              checked={notifications.appointmentReminders}
-              onCheckedChange={(checked) =>
-                setNotifications({ ...notifications, appointmentReminders: checked })
-              }
-            />
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium text-slate-800">Payment Alerts</p>
-              <p className="text-sm text-slate-600">
-                Receive alerts for payment activities
-              </p>
-            </div>
-            <Switch
-              checked={notifications.paymentAlerts}
-              onCheckedChange={(checked) =>
-                setNotifications({ ...notifications, paymentAlerts: checked })
-              }
-            />
-          </div>
+          ))}
         </div>
       </Card>
 
       {/* Data Backup */}
       <Card className="overflow-hidden">
-        <div className="bg-blue-600 text-white px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Database className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Data Backup</h2>
-          </div>
+        <div className="bg-blue-600 text-white px-6 py-4 flex items-center gap-2">
+          <Database className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">{t('settings.dataBackup')}</h2>
         </div>
         <div className="p-6">
-          <p className="text-slate-600 mb-6">
-            Backup your clinic data to ensure you never lose important information.
-            Choose between local backup or cloud storage.
-          </p>
+          <p className="text-slate-600 mb-6">{t('settings.backupDesc')}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="p-5 border-2 border-slate-200">
-              <h3 className="font-semibold text-slate-800 mb-2">Local Backup</h3>
-              <p className="text-sm text-slate-600 mb-4">
-                Download and save your data locally to your device
-              </p>
-              <Button
-                onClick={() => handleBackup('Local')}
-                variant="outline"
-                className="w-full"
-              >
+              <h3 className="font-semibold text-slate-800 mb-2">{t('settings.localBackup')}</h3>
+              <p className="text-sm text-slate-600 mb-4">{t('settings.localBackupDesc')}</p>
+              <Button variant="outline" className="w-full" onClick={() => alert('Local backup initiated...')}>
                 <Database className="w-4 h-4 mr-2" />
-                Backup Locally
+                {t('settings.backupLocally')}
               </Button>
             </Card>
             <Card className="p-5 border-2 border-blue-200 bg-blue-50">
-              <h3 className="font-semibold text-slate-800 mb-2">Cloud Backup</h3>
-              <p className="text-sm text-slate-600 mb-4">
-                Securely backup your data to cloud storage
-              </p>
-              <Button
-                onClick={() => handleBackup('Cloud')}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
+              <h3 className="font-semibold text-slate-800 mb-2">{t('settings.cloudBackup')}</h3>
+              <p className="text-sm text-slate-600 mb-4">{t('settings.cloudBackupDesc')}</p>
+              <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => alert('Cloud backup initiated...')}>
                 <Database className="w-4 h-4 mr-2" />
-                Backup to Cloud
+                {t('settings.backupToCloud')}
               </Button>
             </Card>
           </div>
-          <p className="text-sm text-slate-500 mt-4">
-            Last backup: March 31, 2026 at 11:30 PM
-          </p>
         </div>
       </Card>
     </div>

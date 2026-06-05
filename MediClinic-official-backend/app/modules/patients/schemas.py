@@ -116,6 +116,11 @@ class PatientSearchFilters(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    gender: Optional[str] = None
+    age_min: Optional[int] = None
+    age_max: Optional[int] = None
+    allergies: Optional[str] = None
+    chronic_conditions: Optional[str] = None
 
 # Attached files schemas
 class AttachedFileBase(BaseModel):
