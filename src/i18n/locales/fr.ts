@@ -203,7 +203,7 @@ export default {
     cloudBackupDesc: 'Sauvegardez vos données en toute sécurité dans le cloud',
     backupLocally: 'Sauvegarder localement',
     backupToCloud: 'Sauvegarder dans le cloud',
-    backupDesc: 'Sauvegardez les données de votre clinique pour ne jamais perdre d'informations importantes.',
+    backupDesc: "Sauvegardez les données de votre clinique pour ne jamais perdre d'informations importantes.",
     lastBackup: 'Dernière sauvegarde',
   },
   common: {
