@@ -1,11 +1,13 @@
 import { Link } from 'react-router';
 import { Plus, Search, Download, Eye, DollarSign, CheckCircle, Clock } from 'lucide-react';
 import { Card } from '../ui/card';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useState } from 'react';
 
 export function BillingList() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
 
   const invoices = [

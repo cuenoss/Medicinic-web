@@ -5,8 +5,10 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { appointmentsService, Appointment } from '../../services/appointments';
 import { patientsService } from '../../services/patients';
+import { useTranslation } from 'react-i18next';
 
 export function AppointmentCalendar() {
+  const { t, i18n } = useTranslation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
@@ -33,146 +35,53 @@ export function AppointmentCalendar() {
     time: ''
   });
 
-  // Fetch appointments for current month
+  const monthNames = t('appointments.months', { returnObjects: true }) as string[];
+  const dayNames = t('appointments.days', { returnObjects: true }) as string[];
+
+  const fetchMonthAppointments = async () => {
+    try {
+      setLoading(true);
+      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      const allAppointments = await appointmentsService.getAppointments() as Appointment[];
+      const startDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+      const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+      const appointmentsData = allAppointments.filter(apt =>
+        apt.date >= startDateStr && apt.date <= endDateStr
+      );
+      setAppointments(appointmentsData || []);
+    } catch (error) {
+      console.error('Failed to fetch appointments:', error);
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        setLoading(true);
-        const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-        
-        const allAppointments = await appointmentsService.getAppointments() as Appointment[];
-        
-        // Filter appointments locally for the current month
-        const startDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-        const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-        console.log('Date range:', startDateStr, 'to', endDateStr, 'Current month:', currentDate.getMonth() + 1);
-        console.log('End date details:', endDate, 'End date string:', endDateStr);
-        console.log('All appointments:', allAppointments.map(a => ({id: a.id, date: a.date, patient: a.patient_name})));
-        const appointmentsData = allAppointments.filter(apt => 
-          apt.date >= startDateStr && apt.date <= endDateStr
-        );
-        
-        setAppointments(appointmentsData || []);
-      } catch (error) {
-        console.error('Failed to fetch appointments:', error);
-        setAppointments([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchMonthAppointments();
+  }, [currentDate]);
 
-    fetchAppointments();
-    
-  }, []); // Empty dependency array means this runs once on mount
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
 
-  // Reload appointments when month changes
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        setLoading(true);
-        const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-        
-        const allAppointments = await appointmentsService.getAppointments() as Appointment[];
-        
-        // Filter appointments locally for the current month
-        const startDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-        const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-        console.log('Date range:', startDateStr, 'to', endDateStr, 'Current month:', currentDate.getMonth() + 1);
-        console.log('End date details:', endDate, 'End date string:', endDateStr);
-        console.log('All appointments:', allAppointments.map(a => ({id: a.id, date: a.date, patient: a.patient_name})));
-        const appointmentsData = allAppointments.filter(apt => 
-          apt.date >= startDateStr && apt.date <= endDateStr
-        );
-        
-        setAppointments(appointmentsData || []);
-      } catch (error) {
-        console.error('Failed to fetch appointments:', error);
-        setAppointments([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAppointments();
-  }, [currentDate]); // Reload when currentDate changes
-
-  const monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-
-  const daysInMonth = new Date(
-    currentDate.getFullYear(),
-    currentDate.getMonth() + 1,
-    0
-  ).getDate();
-  const firstDayOfMonth = new Date(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    1
-  ).getDay();
-  
-  // Debug: Check month calculation
-  console.log('Month debug:', {
-    currentMonth: currentDate.getMonth(),
-    currentMonthName: monthNames[currentDate.getMonth()],
-    currentYear: currentDate.getFullYear(),
-    daysInMonth: daysInMonth,
-    firstDayOfMonth: firstDayOfMonth
-  });
-
-  // Calculate appointments for each day of the month
   const getAppointmentsForDay = (day: number) => {
-    // Create date string for the calendar day
     const year = currentDate.getFullYear();
     const month = String(currentDate.getMonth() + 1).padStart(2, '0');
     const dayStr = String(day).padStart(2, '0');
     const calendarDateStr = `${year}-${month}-${dayStr}`;
-    
-    const dayAppointments = appointments.filter(apt => {
-      // Compare date strings directly to avoid timezone issues
-      return apt.date === calendarDateStr;
-    });
-    
-    // Debug: Log for a few days to see what's happening
-    if (day <= 5 || (day >= 15 && day <= 20)) {
-      console.log(`Day ${day}: looking for ${calendarDateStr}, found ${dayAppointments.length} appointments`);
-      console.log('Available appointments:', appointments.map(a => ({ id: a.id, date: a.date, patient: a.patient_name })));
-    }
-    
-    return dayAppointments;
+    return appointments.filter(apt => apt.date === calendarDateStr);
   };
 
-  const getAppointmentCountForDay = (day: number) => {
-    return getAppointmentsForDay(day).length;
-  };
+  const getAppointmentCountForDay = (day: number) => getAppointmentsForDay(day).length;
 
   const handleDayClick = async (day: number) => {
     setSelectedDay(day);
-    const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    // Format date locally to avoid timezone issues
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
     const dayStr = String(day).padStart(2, '0');
     const dateStr = `${year}-${month}-${dayStr}`;
     setSelectedDate(dateStr);
-    
-    // Debug: Log the date being used
-    console.log('Clicked day:', day, 'Date string:', dateStr, 'Selected date:', selectedDate);
-    
-    // Fetch appointments for the selected date
     try {
       setAppointmentsLoading(true);
       const appointmentsData = await appointmentsService.getAppointmentsByDate(dateStr) as Appointment[];
@@ -192,28 +101,16 @@ export function AppointmentCalendar() {
       setSearchedPatient(null);
       return;
     }
-    
     try {
       setSearching(true);
-      // Use the new phone search endpoint
       const patients = await patientsService.searchPatientsByPhone(phoneNumber);
-      
       if (patients && patients.length > 0) {
-        // Take the first match
         const patient = patients[0];
         setSearchedPatient(patient);
-        setNewAppointment(prev => ({
-          ...prev,
-          patientId: patient.id,
-          patientName: patient.full_name
-        }));
+        setNewAppointment(prev => ({ ...prev, patientId: patient.id, patientName: patient.full_name }));
       } else {
         setSearchedPatient(null);
-        setNewAppointment(prev => ({
-          ...prev,
-          patientId: null,
-          patientName: ''
-        }));
+        setNewAppointment(prev => ({ ...prev, patientId: null, patientName: '' }));
       }
     } catch (error) {
       console.error('Error searching patient:', error);
@@ -225,140 +122,66 @@ export function AppointmentCalendar() {
 
   const handleRescheduleAppointment = (appointment: Appointment) => {
     setReschedulingAppointment(appointment);
-    setRescheduleData({
-      date: appointment.date,
-      time: appointment.time
-    });
+    setRescheduleData({ date: appointment.date, time: appointment.time });
     setShowRescheduleModal(true);
   };
 
   const handleSaveReschedule = async () => {
     if (!reschedulingAppointment || !rescheduleData.date || !rescheduleData.time) return;
-
     try {
-      const updateData = {
+      await appointmentsService.updateAppointment(reschedulingAppointment.id, {
         date: rescheduleData.date,
         time: rescheduleData.time
-      };
-      console.log('DEBUG: Sending reschedule data:', updateData);
-      console.log('DEBUG: Appointment ID:', reschedulingAppointment.id);
-      
-      await appointmentsService.updateAppointment(reschedulingAppointment.id, updateData);
-
-      // Refresh appointments
-      const fetchAppointments = async () => {
-        try {
-          setLoading(true);
-          const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-          const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-          
-          const appointmentsData = await appointmentsService.getAppointments(1, 100, {
-            start_date: startDate.toISOString().split('T')[0],
-            end_date: endDate.toISOString().split('T')[0]
-          }) as Appointment[];
-          
-          setAppointments(appointmentsData || []);
-        } catch (error) {
-          console.error('Failed to fetch appointments:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      await fetchAppointments();
-      
+      });
+      await fetchMonthAppointments();
       setShowRescheduleModal(false);
       setReschedulingAppointment(null);
       setRescheduleData({ date: '', time: '' });
-      
-      alert('Appointment rescheduled successfully!');
+      alert(t('appointments.saveChanges') + '!');
     } catch (error) {
       console.error('Failed to reschedule appointment:', error);
-      alert('Failed to reschedule appointment. Please try again.');
+      alert(t('common.error'));
     }
   };
 
   const handleAddToCalendar = async () => {
-    console.log('Form state:', newAppointment);
-    console.log('Button disabled:', !newAppointment.patientId || !newAppointment.day || !newAppointment.time || !newAppointment.date);
-    
     if (newAppointment.patientId && newAppointment.day && newAppointment.time && newAppointment.date) {
       try {
-        // Create appointment via API
-        const appointmentData = {
+        await appointmentsService.createAppointment({
           patient_name: newAppointment.patientName,
           phone_number: newAppointment.phoneNumber,
-          date: newAppointment.date, // Use date from state
+          date: newAppointment.date,
           time: newAppointment.time,
           type: 'Check-up',
-          duration: 60, // 60 minutes default
+          duration: 60,
           patient_id: newAppointment.patientId,
-         
-        };
-
-        await appointmentsService.createAppointment(appointmentData);
-        
-        // Refresh appointments
-        const fetchAppointments = async () => {
-          try {
-            setLoading(true);
-            const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-            
-            const allAppointments = await appointmentsService.getAppointments() as Appointment[];
-            
-            // Filter appointments locally for the current month
-            const startDateStr = startDate.toISOString().split('T')[0];
-            const endDateStr = endDate.toISOString().split('T')[0];
-            const appointmentsData = allAppointments.filter(apt => 
-              apt.date >= startDateStr && apt.date <= endDateStr
-            );
-            
-            setAppointments(appointmentsData || []);
-          } catch (error) {
-            console.error('Failed to fetch appointments:', error);
-          } finally {
-            setLoading(false);
-          }
-        };
-
-        await fetchAppointments();
-        
+        });
+        await fetchMonthAppointments();
         setShowNewAppointmentModal(false);
         setSelectedDay(null);
-        setNewAppointment({ 
-          phoneNumber: '', 
-          day: '', 
-          time: '', 
-          date: '', 
-          patientId: null, 
-          patientName: '' 
-        });
+        setNewAppointment({ phoneNumber: '', day: '', time: '', date: '', patientId: null, patientName: '' });
         setSearchedPatient(null);
       } catch (error) {
         console.error('Failed to create appointment:', error);
-        
-        // Show user-friendly error message
-        const errorMessage = error as Error;
-        alert(`Error: ${errorMessage.message || 'Failed to create appointment'}`);
+        alert(`${t('common.error')}: ${(error as Error).message}`);
       }
     }
   };
 
-  const getAppointmentForDay = (day: number) => {
-    return appointments.find((apt) => apt.day === day);
-  };
-
   const previousMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
-    );
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
   const nextMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
-    );
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const formatSelectedDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    const locale = i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'ar' ? 'ar-DZ' : 'en-US';
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   return (
@@ -367,20 +190,20 @@ export function AppointmentCalendar() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-slate-800 mb-2">
-            Appointments
+            {t('appointments.title')}
           </h1>
-          <p className="text-slate-600">Manage your appointment schedule</p>
+          <p className="text-slate-600">{t('appointments.manageSchedule')}</p>
         </div>
         <div className="flex gap-3">
           <Link to="/appointments/schedule">
             <Button variant="outline">
               <Clock className="w-5 h-5 mr-2" />
-              Daily Schedule
+              {t('appointments.dailySchedule')}
             </Button>
           </Link>
           <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowNewAppointmentModal(true)}>
             <Plus className="w-5 h-5 mr-2" />
-            New Appointment
+            {t('appointments.newAppointment')}
           </Button>
         </div>
       </div>
@@ -390,7 +213,7 @@ export function AppointmentCalendar() {
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-slate-800">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            {Array.isArray(monthNames) ? monthNames[currentDate.getMonth()] : ''} {currentDate.getFullYear()}
           </h2>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={previousMonth}>
@@ -405,16 +228,13 @@ export function AppointmentCalendar() {
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-2">
           {/* Day Headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div
-              key={day}
-              className="text-center text-sm font-medium text-slate-600 py-2"
-            >
+          {(Array.isArray(dayNames) ? dayNames : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']).map((day) => (
+            <div key={day} className="text-center text-sm font-medium text-slate-600 py-2">
               {day}
             </div>
           ))}
 
-          {/* Empty cells for days before month starts */}
+          {/* Empty cells */}
           {Array.from({ length: firstDayOfMonth }).map((_, index) => (
             <div key={`empty-${index}`} className="aspect-square" />
           ))}
@@ -424,16 +244,11 @@ export function AppointmentCalendar() {
             const day = index + 1;
             const dayAppointments = getAppointmentsForDay(day);
             const appointmentCount = getAppointmentCountForDay(day);
-            const isToday = new Date().getDate() === day && 
+            const isToday = new Date().getDate() === day &&
                            new Date().getMonth() === currentDate.getMonth() &&
                            new Date().getFullYear() === currentDate.getFullYear();
             const isPastDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), day) < new Date() && !isToday;
             const hasAppointments = dayAppointments.length > 0;
-
-            // Debug: Log styling conditions for a few days
-            if (day <= 5 || (day >= 15 && day <= 20) || day >= 28) {
-              console.log(`Day ${day} styling: isToday=${isToday}, isPastDay=${isPastDay}, hasAppointments=${hasAppointments}, appointments=${dayAppointments.length}`);
-            }
 
             return (
               <div
@@ -455,16 +270,10 @@ export function AppointmentCalendar() {
               >
                 <div className="text-sm font-medium mb-1">{day}</div>
                 {hasAppointments && (
-                  <div
-                    className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                      isToday
-                        ? 'bg-white/20 text-white'
-                        : isPastDay
-                        ? 'bg-gray-200 text-gray-600'
-                        : 'bg-yellow-500 text-yellow-900'
-                    }`}
-                  >
-                    {appointmentCount} {appointmentCount === 1 ? 'apt' : 'apts'}
+                  <div className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                    isToday ? 'bg-white/20 text-white' : isPastDay ? 'bg-gray-200 text-gray-600' : 'bg-yellow-500 text-yellow-900'
+                  }`}>
+                    {appointmentCount} {appointmentCount === 1 ? t('appointments.apt') : t('appointments.apts')}
                   </div>
                 )}
               </div>
@@ -476,33 +285,30 @@ export function AppointmentCalendar() {
         <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-slate-200">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-blue-600 rounded"></div>
-            <span className="text-sm text-slate-600">Today</span>
+            <span className="text-sm text-slate-600">{t('appointments.legendToday')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-yellow-300 border border-yellow-500 rounded"></div>
-            <span className="text-sm text-slate-600">Future Appointments (After Today)</span>
+            <span className="text-sm text-slate-600">{t('appointments.legendFuture')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-gray-50 border border-gray-200 rounded"></div>
-            <span className="text-sm text-slate-600">Past Days</span>
+            <span className="text-sm text-slate-600">{t('appointments.legendPast')}</span>
           </div>
         </div>
       </Card>
 
-      
       {/* New Appointment Modal */}
       {showNewAppointmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-800">
-                {selectedDay ? `Rendez-vous - ${monthNames[currentDate.getMonth()]} ${selectedDay}` : 'New Appointment'}
+                {selectedDay
+                  ? `${t('appointments.newAppointment')} — ${Array.isArray(monthNames) ? monthNames[currentDate.getMonth()] : ''} ${selectedDay}`
+                  : t('appointments.newAppointment')}
               </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowNewAppointmentModal(false)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowNewAppointmentModal(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -511,26 +317,23 @@ export function AppointmentCalendar() {
               {selectedDay && (
                 <div className="bg-green-50 p-3 rounded-lg mb-4">
                   <p className="text-sm font-medium text-green-800">
-                    Selected Date: {monthNames[currentDate.getMonth()]} {selectedDay}, {currentDate.getFullYear()}
+                    {t('appointments.selectedDate')}: {Array.isArray(monthNames) ? monthNames[currentDate.getMonth()] : ''} {selectedDay}, {currentDate.getFullYear()}
                   </p>
                 </div>
               )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Phone Number
+                  {t('appointments.phoneNumber')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <User className="w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Enter patient phone number"
+                    placeholder={t('appointments.phoneNumber')}
                     value={newAppointment.phoneNumber}
                     onChange={(e) => {
-                      setNewAppointment({
-                        ...newAppointment,
-                        phoneNumber: e.target.value
-                      });
+                      setNewAppointment({ ...newAppointment, phoneNumber: e.target.value });
                       searchPatientByPhone(e.target.value);
                     }}
                     className="flex-1 outline-none text-slate-800 placeholder-slate-400"
@@ -542,57 +345,45 @@ export function AppointmentCalendar() {
                 {searchedPatient && (
                   <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <p className="text-sm font-medium text-green-800">
-                      Found: {searchedPatient.full_name}
+                      {t('appointments.foundPatient')}: {searchedPatient.full_name}
                     </p>
                     <p className="text-xs text-green-600">
-                      ID: {searchedPatient.id} | Phone: {searchedPatient.phone}
+                      ID: {searchedPatient.id} | {t('appointments.phoneNumber')}: {searchedPatient.phone}
                     </p>
                   </div>
                 )}
                 {newAppointment.phoneNumber && !searchedPatient && !searching && (
                   <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">
-                      No patient found with this phone number
-                    </p>
+                    <p className="text-sm text-red-600">{t('appointments.phoneNotFound')}</p>
                   </div>
                 )}
               </div>
-            
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Appointment Time
+                  {t('appointments.appointmentTime')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Clock className="w-4 h-4 text-slate-400" />
                   <input
                     type="time"
                     value={newAppointment.time}
-                    onChange={(e) =>
-                      setNewAppointment({
-                        ...newAppointment,
-                        time: e.target.value
-                      })
-                    }
+                    onChange={(e) => setNewAppointment({ ...newAppointment, time: e.target.value })}
                     className="flex-1 outline-none text-slate-800"
                   />
                 </div>
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNewAppointmentModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
+                <Button variant="outline" onClick={() => setShowNewAppointmentModal(false)} className="flex-1">
+                  {t('appointments.cancel')}
                 </Button>
                 <Button
                   onClick={handleAddToCalendar}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   disabled={!newAppointment.patientId || !newAppointment.day || !newAppointment.time || !newAppointment.date}
-                  title={`Button disabled: ${!newAppointment.patientId ? 'No valid patient' : ''} ${!newAppointment.day ? 'No day' : ''} ${!newAppointment.time ? 'No time' : ''} ${!newAppointment.date ? 'No date' : ''}`}
                 >
-                  Add to Calendar
+                  {t('appointments.addToCalendar')}
                 </Button>
               </div>
             </div>
@@ -606,110 +397,74 @@ export function AppointmentCalendar() {
           <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-800">
-                Appointments for {selectedDate && (() => {
-                  const [year, month, day] = selectedDate.split('-');
-                  const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                  return date.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  });
-                })()}
+                {t('appointments.appointmentsFor')} {formatSelectedDate(selectedDate)}
               </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAppointmentsModal(false)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowAppointmentsModal(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
 
             {appointmentsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="text-slate-600">Loading appointments...</div>
+                <div className="text-slate-600">{t('appointments.loadingAppointments')}</div>
               </div>
             ) : selectedDateAppointments.length === 0 ? (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-600 mb-4">No appointments scheduled for this day</p>
-                <Button 
+                <p className="text-slate-600 mb-4">{t('appointments.noAppointmentsDay')}</p>
+                <Button
                   className="bg-blue-600 hover:bg-blue-700"
                   onClick={() => {
                     setShowAppointmentsModal(false);
                     setShowNewAppointmentModal(true);
-                    setNewAppointment({ 
-                      phoneNumber: '', 
-                      day: selectedDay?.toString() || '', 
-                      time: '', 
-                      date: selectedDate, 
-                      patientId: null, 
-                      patientName: '' 
-                    });
+                    setNewAppointment({ phoneNumber: '', day: selectedDay?.toString() || '', time: '', date: selectedDate, patientId: null, patientName: '' });
                     setSearchedPatient(null);
                   }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Appointment
+                  {t('appointments.addAppointment')}
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-sm text-slate-600">
-                    {selectedDateAppointments.length} appointment{selectedDateAppointments.length !== 1 ? 's' : ''} scheduled
+                    {selectedDateAppointments.length} {selectedDateAppointments.length !== 1 ? t('appointments.apts') : t('appointments.apt')}
                   </p>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="bg-blue-600 hover:bg-blue-700"
                     onClick={() => {
                       setShowAppointmentsModal(false);
                       setShowNewAppointmentModal(true);
-                      setNewAppointment({ 
-                        phoneNumber: '', 
-                        day: selectedDay?.toString() || '', 
-                        time: '', 
-                        date: selectedDate, 
-                        patientId: null, 
-                        patientName: '' 
-                      });
+                      setNewAppointment({ phoneNumber: '', day: selectedDay?.toString() || '', time: '', date: selectedDate, patientId: null, patientName: '' });
                       setSearchedPatient(null);
                     }}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Appointment
+                    {t('appointments.addAppointment')}
                   </Button>
                 </div>
-                
+
                 {selectedDateAppointments.map((appointment) => (
                   <div
                     key={appointment.id}
                     className="flex flex-col md:flex-row gap-4 p-4 rounded-lg border-2 bg-white border-slate-200 hover:border-blue-300 hover:shadow-md transition-all"
                   >
-                    {/* Time */}
                     <div className="flex items-center gap-3 md:w-32 flex-shrink-0">
                       <Clock className="w-5 h-5 text-slate-400" />
                       <div>
-                        <p className="font-semibold text-slate-800">
-                          {appointment.time}
-                        </p>
-                        <p className="text-xs text-slate-500">Appointment</p>
+                        <p className="font-semibold text-slate-800">{appointment.time}</p>
+                        <p className="text-xs text-slate-500">{t('appointments.appointmentLabel')}</p>
                       </div>
                     </div>
-
-                    {/* Divider */}
                     <div className="hidden md:block w-px bg-slate-200"></div>
-
-                    {/* Appointment Details */}
                     <div className="flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <User className="w-4 h-4 text-slate-400" />
-                            <h4 className="font-semibold text-slate-800">
-                              {appointment.phone_number}
-                            </h4>
+                            <h4 className="font-semibold text-slate-800">{appointment.phone_number}</h4>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-slate-600">
                             <span>{appointment.patient_name}</span>
@@ -728,15 +483,11 @@ export function AppointmentCalendar() {
                           )}
                         </div>
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleRescheduleAppointment(appointment)}
-                          >
-                            Reschedule
+                          <Button variant="outline" size="sm" onClick={() => handleRescheduleAppointment(appointment)}>
+                            {t('appointments.reschedule')}
                           </Button>
                           <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                            Start Consultation
+                            {t('appointments.startConsultation')}
                           </Button>
                         </div>
                       </div>
@@ -749,19 +500,15 @@ export function AppointmentCalendar() {
         </div>
       )}
 
-      {/* Reschedule Appointment Modal */}
+      {/* Reschedule Modal */}
       {showRescheduleModal && reschedulingAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-800">
-                Reschedule Appointment
+                {t('appointments.rescheduleAppointment')}
               </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowRescheduleModal(false)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowRescheduleModal(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -769,70 +516,56 @@ export function AppointmentCalendar() {
             <div className="space-y-4">
               <div className="bg-slate-50 p-3 rounded-lg mb-4">
                 <p className="text-sm font-medium text-slate-800 mb-1">
-                  Patient: {reschedulingAppointment.patient_name}
+                  {t('appointments.patientName')}: {reschedulingAppointment.patient_name}
                 </p>
                 <p className="text-sm text-slate-600 mb-1">
-                  Phone: {reschedulingAppointment.phone_number}
+                  {t('appointments.phoneNumber')}: {reschedulingAppointment.phone_number}
                 </p>
                 <p className="text-sm text-slate-600">
-                  Current: {reschedulingAppointment.date} at {reschedulingAppointment.time}
+                  {t('appointments.current')}: {reschedulingAppointment.date} — {reschedulingAppointment.time}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  New Date
+                  {t('appointments.newDate')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Calendar className="w-4 h-4 text-slate-400" />
                   <input
                     type="date"
                     value={rescheduleData.date}
-                    onChange={(e) =>
-                      setRescheduleData({
-                        ...rescheduleData,
-                        date: e.target.value
-                      })
-                    }
+                    onChange={(e) => setRescheduleData({ ...rescheduleData, date: e.target.value })}
                     className="flex-1 outline-none text-slate-800"
                   />
                 </div>
               </div>
-            
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  New Time
+                  {t('appointments.newTime')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Clock className="w-4 h-4 text-slate-400" />
                   <input
                     type="time"
                     value={rescheduleData.time}
-                    onChange={(e) =>
-                      setRescheduleData({
-                        ...rescheduleData,
-                        time: e.target.value
-                      })
-                    }
+                    onChange={(e) => setRescheduleData({ ...rescheduleData, time: e.target.value })}
                     className="flex-1 outline-none text-slate-800"
                   />
                 </div>
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowRescheduleModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
+                <Button variant="outline" onClick={() => setShowRescheduleModal(false)} className="flex-1">
+                  {t('appointments.cancel')}
                 </Button>
                 <Button
                   onClick={handleSaveReschedule}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   disabled={!rescheduleData.date || !rescheduleData.time}
                 >
-                  Save Changes
+                  {t('appointments.saveChanges')}
                 </Button>
               </div>
             </div>

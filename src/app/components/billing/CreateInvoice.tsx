@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ArrowLeft, Save, User, DollarSign, FileText, Calendar } from 'lucide-react';
 import { Card } from '../ui/card';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 
 export function CreateInvoice() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     patientName: '',

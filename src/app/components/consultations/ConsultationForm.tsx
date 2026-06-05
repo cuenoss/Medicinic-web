@@ -18,6 +18,7 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Card } from '../ui/card';
+import { useTranslation } from 'react-i18next';
 
 interface AttachedFile {
   id: string;
@@ -27,6 +28,7 @@ interface AttachedFile {
 }
 
 export function ConsultationForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     patientName: '',
@@ -76,7 +78,7 @@ export function ConsultationForm() {
 
   const handleSave = () => {
     console.log('Saving consultation:', { ...formData, attachedFiles });
-    alert('Consultation saved successfully!');
+    alert(t('consultations.savedSuccess'));
     navigate('/consultations');
   };
 
@@ -86,16 +88,16 @@ export function ConsultationForm() {
       <Link to="/consultations">
         <Button variant="ghost" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Consultations
+          {t('consultations.backToConsultations')}
         </Button>
       </Link>
 
       <Card className="overflow-hidden">
         {/* Header */}
         <div className="bg-blue-600 text-white px-6 py-4">
-          <h1 className="text-2xl font-semibold">New Consultation</h1>
+          <h1 className="text-2xl font-semibold">{t('consultations.newConsultation')}</h1>
           <p className="text-blue-100 text-sm mt-1">
-            Complete patient consultation details
+            {t('consultations.chiefComplaintPlaceholder')}
           </p>
         </div>
 
@@ -109,14 +111,14 @@ export function ConsultationForm() {
 
         {/* Form Content */}
         <div className="px-6 py-6 space-y-6">
-          {/* Patient Name */}
+          {/* {t('consultations.patientName')} */}
           <div className="space-y-2">
             <Label
               htmlFor="patientName"
               className="flex items-center gap-2 text-slate-700"
             >
               <User className="w-4 h-4 text-blue-600" />
-              Patient Name
+              {t('consultations.patientName')}
             </Label>
             <Input
               id="patientName"
@@ -129,14 +131,14 @@ export function ConsultationForm() {
             />
           </div>
 
-          {/* Chief Complaint */}
+          {/* {t('consultations.chiefComplaint')} */}
           <div className="space-y-2">
             <Label
               htmlFor="chiefComplaint"
               className="flex items-center gap-2 text-slate-700"
             >
               <FileText className="w-4 h-4 text-blue-600" />
-              Chief Complaint
+              {t('consultations.chiefComplaint')}
             </Label>
             <Input
               id="chiefComplaint"
@@ -149,14 +151,14 @@ export function ConsultationForm() {
             />
           </div>
 
-          {/* Clinical Examination */}
+          {/* {t('consultations.clinicalExamination')} */}
           <div className="space-y-2">
             <Label
               htmlFor="clinicalExamination"
               className="flex items-center gap-2 text-slate-700"
             >
               <Stethoscope className="w-4 h-4 text-blue-600" />
-              Clinical Examination
+              {t('consultations.clinicalExamination')}
             </Label>
             <Textarea
               id="clinicalExamination"
@@ -170,14 +172,14 @@ export function ConsultationForm() {
             />
           </div>
 
-          {/* Diagnosis */}
+          {/* {t('consultations.diagnosis')} */}
           <div className="space-y-2">
             <Label
               htmlFor="diagnosis"
               className="flex items-center gap-2 text-slate-700"
             >
               <ClipboardList className="w-4 h-4 text-blue-600" />
-              Diagnosis
+              {t('consultations.diagnosis')}
             </Label>
             <Textarea
               id="diagnosis"
@@ -198,7 +200,7 @@ export function ConsultationForm() {
               className="flex items-center gap-2 text-slate-700"
             >
               <Pill className="w-4 h-4 text-blue-600" />
-              Treatment / Prescription
+              {t('consultations.treatment')}
             </Label>
             <Textarea
               id="treatment"
@@ -219,7 +221,7 @@ export function ConsultationForm() {
               className="flex items-center gap-2 text-slate-700"
             >
               <FileCheck className="w-4 h-4 text-blue-600" />
-              Additional Notes
+              {t('consultations.notes')}
             </Label>
             <Textarea
               id="notes"
@@ -235,7 +237,7 @@ export function ConsultationForm() {
           <div className="space-y-3">
             <Label className="flex items-center gap-2 text-slate-700">
               <Upload className="w-4 h-4 text-blue-600" />
-              Attach Files
+              {t('consultations.attachFiles')}
             </Label>
             <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
               <input
@@ -303,14 +305,14 @@ export function ConsultationForm() {
         {/* Footer with Save Button */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
           <Link to="/consultations">
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{t('common.cancel')}</Button>
           </Link>
           <Button
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700 text-white px-8"
           >
             <Save className="w-4 h-4 mr-2" />
-            Save Consultation
+            {t('consultations.saveConsultation')}
           </Button>
         </div>
       </Card>

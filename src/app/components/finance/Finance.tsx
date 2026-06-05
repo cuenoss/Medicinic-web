@@ -26,8 +26,10 @@ import {
   MonthlyData,
   MonthlyDataResponse
 } from '../../services/finance';
+import { useTranslation } from 'react-i18next';
 
 export function Finance() {
+  const { t } = useTranslation();
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [newExpense, setNewExpense] = useState<ExpenseCreate>({
     category: '',
