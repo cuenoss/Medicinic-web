@@ -264,7 +264,7 @@ export function Dashboard() {
           </Avatar>
           <div className="flex-1">
             <h2 className="text-xl font-semibold mb-1">Dr. {user?.fullName || 'Loading...'}</h2>
-            <p className="text-blue-100">General Practitioner</p>
+            <p className="text-blue-100">{t('dashboard.generalPractitioner')}</p>
             <p className="text-sm text-blue-100 mt-1">{user?.email || 'doctor@clinic.com'}</p>
           </div>
         </div>

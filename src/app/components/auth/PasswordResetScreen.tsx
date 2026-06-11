@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -7,6 +8,7 @@ import { Label } from '../ui/label';
 import { Card } from '../ui/card';
 
 export function PasswordResetScreen() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
 
@@ -26,26 +28,26 @@ export function PasswordResetScreen() {
         </div>
 
         <h1 className="text-2xl font-semibold text-slate-800 mb-2">
-          Check Your Email
+          {t('auth.checkEmail')}
         </h1>
         <p className="text-slate-600 mb-8">
-          We've sent password reset instructions to{' '}
+          {t('auth.resetSentText')}{' '}
           <span className="font-medium text-slate-800">{email}</span>
         </p>
 
         <Link to="/auth/login">
           <Button className="w-full bg-blue-600 hover:bg-blue-700">
-            Back to Login
+            {t('auth.backToLogin')}
           </Button>
         </Link>
 
         <p className="mt-6 text-sm text-slate-600">
-          Didn't receive the email?{' '}
+          {t('auth.didntReceive')}{' '}
           <button
             onClick={() => setSent(false)}
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
-            Try again
+            {t('auth.tryAgain')}
           </button>
         </p>
       </Card>
@@ -64,23 +66,23 @@ export function PasswordResetScreen() {
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-semibold text-slate-800 mb-2">
-          Reset Password
+          {t('auth.resetPassword')}
         </h1>
         <p className="text-slate-600">
-          Enter your email to receive reset instructions
+          {t('auth.resetSubtitle')}
         </p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleReset} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="email">{t('auth.emailAddress')}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
               id="email"
               type="email"
-              placeholder="doctor@clinic.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="pl-10"
@@ -90,7 +92,7 @@ export function PasswordResetScreen() {
         </div>
 
         <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-          Send Reset Link
+          {t('auth.sendResetLink')}
         </Button>
       </form>
 
@@ -98,7 +100,7 @@ export function PasswordResetScreen() {
       <Link to="/auth/login">
         <Button variant="ghost" className="w-full mt-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Login
+          {t('auth.backToLogin')}
         </Button>
       </Link>
     </Card>
