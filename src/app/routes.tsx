@@ -5,6 +5,7 @@ import { LoginScreen } from "./components/auth/LoginScreen";
 import { RegisterScreen } from "./components/auth/RegisterScreen";
 import { PasswordResetScreen } from "./components/auth/PasswordResetScreen";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { AdminRoute } from "./components/auth/AdminRoute";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { PatientList } from "./components/patients/PatientList";
 import { PatientProfile } from "./components/patients/PatientProfile";
@@ -100,9 +101,9 @@ export const router = createHashRouter([
       {
         path: "admin",
         element: (
-          <ProtectedRoute>
+          <AdminRoute>
             <AdminPanel />
-          </ProtectedRoute>
+          </AdminRoute>
         ),
       },
     ],
