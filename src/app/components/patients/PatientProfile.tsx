@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router';
 import {
   ArrowLeft,
@@ -29,6 +30,7 @@ import { ordonnancesService, Ordonnance } from '../../services/ordonnances';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function PatientProfile() {
+  const { t } = useTranslation();
   const { user, token } = useAuth();
   const { id } = useParams();
   const patientId = id ? parseInt(id) : null;
@@ -199,7 +201,7 @@ export function PatientProfile() {
         setShowEditModal(false);
       } catch (error) {
         console.error('Failed to update patient:', error);
-        alert('Failed to update patient profile');
+        alert(t('profile.updateFailed'));
       }
     }
   };
@@ -223,10 +225,10 @@ export function PatientProfile() {
         const uploadedResults = await Promise.all(uploadPromises);
         setUploadedFiles(prev => [...prev, ...uploadedResults]);
         console.log('Uploaded files:', uploadedResults);
-        alert('Files uploaded successfully!');
+        alert(t('profile.filesUploaded'));
       } catch (error) {
         console.error('Failed to upload files:', error);
-        alert('Failed to upload files. Please try again.');
+        alert(t('profile.filesUploadFailed'));
       }
     }
   };
@@ -287,7 +289,7 @@ export function PatientProfile() {
   }, [selectedFile?.id, patient?.id, token, showFileViewer]);
 
   const handleDeleteFile = async (fileId: number) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    if (!confirm(t('profile.confirmDeleteFile'))) return;
     
     try {
       console.log(`Deleting file ${fileId} for patient ${patient!.id}`);
@@ -310,10 +312,10 @@ export function PatientProfile() {
         setShowFileViewer(false);
       }
       
-      alert('File deleted successfully!');
+      alert(t('profile.fileDeleted'));
     } catch (error) {
       console.error('Failed to delete file:', error);
-      alert('Failed to delete file. Please try again.');
+      alert(t('profile.fileDeleteFailed'));
     }
   };
 
@@ -419,10 +421,10 @@ export function PatientProfile() {
           doctor: ''
         });
         
-        alert('Consultation added successfully!');
+        alert(t('profile.consultationAdded'));
       } catch (error) {
         console.error('Failed to add consultation:', error);
-        alert('Failed to add consultation. Please try again.');
+        alert(t('profile.consultationFailed'));
       }
     } else {
       console.error('Cannot create consultation - invalid patient data');
@@ -435,7 +437,7 @@ export function PatientProfile() {
         patientId: patient?.id || 0,
         patientIdValid: (patient?.id || 0) > 0
       });
-      alert('Cannot create consultation: Patient data is not loaded properly. Please refresh the page and try again.');
+      alert(t('profile.consultationInvalid'));
     }
   };
 
@@ -460,10 +462,10 @@ export function PatientProfile() {
         // Clear the form
         setOrdonnanceContent('');
         
-        alert('Ordonnance saved successfully!');
+        alert(t('profile.ordonnanceSaved'));
       } catch (error) {
         console.error('Failed to save ordonnance:', error);
-        alert('Failed to save ordonnance. Please try again.');
+        alert(t('profile.ordonnanceFailed'));
       }
     }
   };
@@ -662,7 +664,7 @@ ${ordonnanceContent}
       <Link to="/patients">
         <Button variant="ghost" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Patients
+          {t('profile.backToPatients')}
         </Button>
       </Link>
 
@@ -681,18 +683,18 @@ ${ordonnanceContent}
                   {patient?.name || 'Loading...'}
                 </h1>
                 <p className="text-slate-600">
-                  {patient?.age} years • {patient?.gender} • Blood Type: {patient?.blood_type}
+                  {patient?.age} {t('profile.years')} • {patient?.gender} • {t('profile.bloodType')}: {patient?.blood_type}
                 </p>
               </div>
               <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleEditProfile}>
                 <Edit className="w-4 h-4 mr-2" />
-                Edit Profile
+                {t('profile.editProfile')}
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex items-center gap-2 text-slate-600">
                 <Calendar className="w-4 h-4" />
-                <span className="text-sm">DOB: {patient?.date_of_birth}</span>
+                <span className="text-sm">{t('profile.dob')}: {patient?.date_of_birth}</span>
               </div>
               <div className="flex items-center gap-2 text-slate-600">
                 <Phone className="w-4 h-4" />
@@ -704,7 +706,7 @@ ${ordonnanceContent}
               </div>
               <div className="flex items-center gap-2 text-slate-600">
                 <MapPin className="w-4 h-4" />
-                <span className="text-sm">{patient?.address || 'N/A'}</span>
+                <span className="text-sm">{patient?.address || t('profile.na')}</span>
               </div>
             </div>
           </div>
@@ -716,7 +718,7 @@ ${ordonnanceContent}
             <div className="flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-orange-900 mb-1">Chronic Diseases</p>
+                <p className="font-medium text-orange-900 mb-1">{t('profile.chronicDiseases')}</p>
                 <div className="flex flex-wrap gap-2">
                   {patient?.chronic_conditions?.split(',').filter(d => d.trim()) || [].map((disease, index) => (
                     <span
@@ -737,16 +739,16 @@ ${ordonnanceContent}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full grid grid-cols-4 h-auto">
           <TabsTrigger value="information" className="py-3">
-            Information
+            {t('profile.information')}
           </TabsTrigger>
           <TabsTrigger value="consultations" className="py-3">
-            Consultations
+            {t('profile.consultations')}
           </TabsTrigger>
           <TabsTrigger value="ordonnances" className="py-3">
-            Ordonnances
+            {t('profile.ordonnances')}
           </TabsTrigger>
           <TabsTrigger value="files" className="py-3">
-            Files
+            {t('profile.files')}
           </TabsTrigger>
         </TabsList>
 
@@ -754,14 +756,14 @@ ${ordonnanceContent}
         <TabsContent value="information" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
-              <h3 className="font-semibold text-slate-800 mb-4">Medical Information</h3>
+              <h3 className="font-semibold text-slate-800 mb-4">{t('profile.medicalInformation')}</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="text-sm text-slate-600">Blood Type</label>
-                  <p className="font-medium text-slate-800">{patient?.blood_type || 'N/A'}</p>
+                  <label className="text-sm text-slate-600">{t('profile.bloodType')}</label>
+                  <p className="font-medium text-slate-800">{patient?.blood_type || t('profile.na')}</p>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600">Allergies</label>
+                  <label className="text-sm text-slate-600">{t('profile.allergies')}</label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {patient?.allergies?.split(',').filter(a => a.trim()) || [].map((allergy, index) => (
                       <span
@@ -774,7 +776,7 @@ ${ordonnanceContent}
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600">Chronic Diseases</label>
+                  <label className="text-sm text-slate-600">{t('profile.chronicDiseases')}</label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {patient?.chronic_conditions?.split(',').filter(d => d.trim()) || [].map((disease, index) => (
                       <span
@@ -787,8 +789,8 @@ ${ordonnanceContent}
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600">Ordonnance</label>
-                  <p className="font-medium text-slate-800">No ordonnances</p>
+                  <label className="text-sm text-slate-600">{t('profile.ordonnance')}</label>
+                  <p className="font-medium text-slate-800">{t('profile.noOrdonnances')}</p>
                 </div>
               </div>
             </Card>
@@ -799,22 +801,22 @@ ${ordonnanceContent}
         {/* Consultations Tab */}
         <TabsContent value="consultations" className="mt-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-slate-800">Consultation History</h3>
+            <h3 className="font-semibold text-slate-800">{t('profile.consultationHistory')}</h3>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowConsultationModal(true)}>
               <FileText className="w-4 h-4 mr-2" />
-              New Consultation
+              {t('profile.newConsultation')}
             </Button>
           </div>
           <div className="space-y-3">
             {loading ? (
               <div className="text-center py-8 text-slate-500">
-                Loading consultations...
+                {t('profile.loadingConsultations')}
               </div>
             ) : consultations.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>No consultations yet</p>
-                <p className="text-sm">Click "New Consultation" to add the first consultation</p>
+                <p>{t('profile.noConsultations')}</p>
+                <p className="text-sm">{t('profile.noConsultationsDesc')}</p>
               </div>
             ) : (
               consultations.map((consultation) => (
@@ -837,7 +839,7 @@ ${ordonnanceContent}
                     </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => handleViewConsultationDetails(consultation)}>
-                    View Details
+                    {t('profile.viewDetails')}
                   </Button>
                 </div>
               </Card>
@@ -848,7 +850,7 @@ ${ordonnanceContent}
         {/* Files Tab */}
         <TabsContent value="files" className="mt-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-slate-800">Patient Files</h3>
+            <h3 className="font-semibold text-slate-800">{t('profile.patientFiles')}</h3>
             <div className="relative">
               <input
                 type="file"
@@ -858,15 +860,15 @@ ${ordonnanceContent}
               />
               <Button className="bg-blue-600 hover:bg-blue-700">
                 <Upload className="w-4 h-4 mr-2" />
-                Upload Files
+                {t('profile.uploadFiles')}
               </Button>
             </div>
           </div>
           {uploadedFiles.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-              <p>No files uploaded yet</p>
-              <p className="text-sm">Click "Upload Files" to add the first file</p>
+              <p>{t('profile.noFiles')}</p>
+              <p className="text-sm">{t('profile.noFilesDesc')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -878,7 +880,7 @@ ${ordonnanceContent}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-slate-800 truncate">{file.file_name}</p>
-                      <p className="text-sm text-slate-600">{file.created_at ? new Date(file.created_at).toLocaleDateString() : 'Unknown date'} · {file.file_type?.toUpperCase() || 'FILE'}</p>
+                      <p className="text-sm text-slate-600">{file.created_at ? new Date(file.created_at).toLocaleDateString() : t('profile.unknownDate')} · {file.file_type?.toUpperCase() || 'FILE'}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button 
@@ -886,7 +888,7 @@ ${ordonnanceContent}
                         size="sm" 
                         onClick={() => handleViewFile(file)}
                       >
-                        View
+                        {t('profile.view')}
                       </Button>
                       <Button 
                         variant="outline" 
@@ -907,7 +909,7 @@ ${ordonnanceContent}
         {/* Ordonnances Tab */}
         <TabsContent value="ordonnances" className="mt-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-slate-800">Ordonnances</h3>
+            <h3 className="font-semibold text-slate-800">{t('profile.ordonnances')}</h3>
           </div>
           
           {/* Ordonnances List */}
@@ -915,8 +917,8 @@ ${ordonnanceContent}
             {ordonnances.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>No ordonnances yet</p>
-                <p className="text-sm">Create your first ordonnance below</p>
+                <p>{t('profile.noOrdonnancesYet')}</p>
+                <p className="text-sm">{t('profile.noOrdonnancesDesc')}</p>
               </div>
             ) : (
               ordonnances.map((ordonnance) => (
@@ -937,10 +939,10 @@ ${ordonnanceContent}
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => setOrdonnanceContent(ordonnance.content)}>
-                        View
+                        {t('profile.view')}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handlePrintOrdonnanceWithContent(ordonnance.content)}>
-                        Print
+                        {t('profile.print')}
                       </Button>
                     </div>
                   </div>
@@ -951,15 +953,15 @@ ${ordonnanceContent}
 
           {/* Create New Ordonnance */}
           <Card className="p-6">
-            <h4 className="font-semibold text-slate-800 mb-4">Create New Ordonnance</h4>
+            <h4 className="font-semibold text-slate-800 mb-4">{t('profile.createNewOrdonnance')}</h4>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Ordonnance Content
+                  {t('profile.ordonnanceContent')}
                 </label>
                 <div className="border border-slate-300 rounded-lg p-4 min-h-[300px]">
                   <textarea
-                    placeholder="Write ordonnance content here..."
+                    placeholder={t('profile.writeOrdonnance')}
                     value={ordonnanceContent}
                     onChange={(e) => setOrdonnanceContent(e.target.value)}
                     className="w-full h-48 outline-none text-slate-800 placeholder-slate-400 resize-none"
@@ -974,21 +976,21 @@ ${ordonnanceContent}
                   onClick={() => setOrdonnanceContent('')}
                   className="flex-1"
                 >
-                  Clear
+                  {t('profile.clear')}
                 </Button>
                 <Button
                   onClick={handleAddOrdonnance}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   disabled={!ordonnanceContent}
                 >
-                  Save Ordonnance
+                  {t('profile.saveOrdonnance')}
                 </Button>
                 <Button
                   onClick={handlePrintOrdonnance}
                   className="flex-1 bg-green-600 hover:bg-green-700"
                   disabled={!ordonnanceContent}
                 >
-                  Print
+                  {t('profile.print')}
                 </Button>
               </div>
             </div>
@@ -1003,7 +1005,7 @@ ${ordonnanceContent}
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
               <h3 className="text-xl font-semibold text-slate-800">
-                New Consultation
+                {t('profile.newConsultation')}
               </h3>
               <Button
                 variant="ghost"
@@ -1019,68 +1021,68 @@ ${ordonnanceContent}
               <div className="space-y-6">
                 {/* 1. Basic Personal Information */}
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-4">1. Basic Personal Information</h4>
+                  <h4 className="text-lg font-semibold text-blue-800 mb-4">{t('profile.basicPersonalInfo')}</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Name</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.name')}</label>
                       <input
                         type="text"
                         value={newConsultation.name || patient?.name}
                         onChange={(e) => setNewConsultation({...newConsultation, name: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Patient name"
+                        placeholder={t('profile.patientNamePlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Age</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.age')}</label>
                       <input
                         type="text"
                         value={newConsultation.age || patient?.age.toString()}
                         onChange={(e) => setNewConsultation({...newConsultation, age: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Age"
+                        placeholder={t('profile.agePlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Sex</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.sex')}</label>
                       <select
                         value={newConsultation.sex || patient?.gender}
                         onChange={(e) => setNewConsultation({...newConsultation, sex: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
                       >
-                        <option value="">Select</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
+                        <option value="">{t('profile.select')}</option>
+                        <option value="Male">{t('common.male')}</option>
+                        <option value="Female">{t('common.female')}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Weight</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.weight')}</label>
                       <input
                         type="text"
                         value={newConsultation.weight}
                         onChange={(e) => setNewConsultation({...newConsultation, weight: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Weight (kg)"
+                        placeholder={t('profile.weightPlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Height</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.height')}</label>
                       <input
                         type="text"
                         value={newConsultation.height}
                         onChange={(e) => setNewConsultation({...newConsultation, height: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Height (cm)"
+                        placeholder={t('profile.heightPlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Contact</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.contact')}</label>
                       <input
                         type="text"
                         value={newConsultation.contact || patient?.phone}
                         onChange={(e) => setNewConsultation({...newConsultation, contact: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Phone number"
+                        placeholder={t('profile.contactPlaceholder')}
                       />
                     </div>
                   </div>
@@ -1088,73 +1090,73 @@ ${ordonnanceContent}
 
                 {/* 2. Main Complaint */}
                 <div className="bg-red-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-red-800 mb-4">2. Main Complaint (Reason for the visit)</h4>
+                  <h4 className="text-lg font-semibold text-red-800 mb-4">{t('profile.mainComplaint')}</h4>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">What is bothering you right now?</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.complaintQuestion')}</label>
                     <textarea
                       value={newConsultation.complaint}
                       onChange={(e) => setNewConsultation({...newConsultation, complaint: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-20"
-                      placeholder="I have a headache / I have stomach pain / I feel tired / I have a cough"
+                      placeholder={t('profile.complaintPlaceholder')}
                     />
                   </div>
                 </div>
 
                 {/* 3. History of the problem */}
                 <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-yellow-800 mb-4">3. History of the problem</h4>
+                  <h4 className="text-lg font-semibold text-yellow-800 mb-4">{t('profile.historyProblem')}</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">When it started?</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.whenStarted')}</label>
                       <input
                         type="text"
                         value={newConsultation.whenStarted}
                         onChange={(e) => setNewConsultation({...newConsultation, whenStarted: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="2 days ago / Last week"
+                        placeholder={t('profile.whenStartedPlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">How often it happens?</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.howOften')}</label>
                       <input
                         type="text"
                         value={newConsultation.howOften}
                         onChange={(e) => setNewConsultation({...newConsultation, howOften: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Daily / Weekly / Sometimes"
+                        placeholder={t('profile.howOftenPlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Getting better or worse?</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.gettingBetterWorse')}</label>
                       <select
                         value={newConsultation.gettingBetter}
                         onChange={(e) => setNewConsultation({...newConsultation, gettingBetter: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
                       >
-                        <option value="">Select</option>
-                        <option value="Better">Getting better</option>
-                        <option value="Worse">Getting worse</option>
-                        <option value="Same">Stays the same</option>
+                        <option value="">{t('profile.select')}</option>
+                        <option value="Better">{t('profile.gettingBetterOpt')}</option>
+                        <option value="Worse">{t('profile.gettingWorseOpt')}</option>
+                        <option value="Same">{t('profile.staysSame')}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">What triggers it?</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.triggers')}</label>
                       <input
                         type="text"
                         value={newConsultation.triggers}
                         onChange={(e) => setNewConsultation({...newConsultation, triggers: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Stress / Food / Activity"
+                        placeholder={t('profile.triggersPlaceholder')}
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium text-slate-700 mb-2">What makes it better?</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.makesBetter')}</label>
                       <input
                         type="text"
                         value={newConsultation.makesBetter}
                         onChange={(e) => setNewConsultation({...newConsultation, makesBetter: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Rest / Medicine / Cold compress"
+                        placeholder={t('profile.makesBetterPlaceholder')}
                       />
                     </div>
                   </div>
@@ -1162,29 +1164,29 @@ ${ordonnanceContent}
 
                 {/* 4. Current Medications */}
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-green-800 mb-4">4. Current Medications</h4>
+                  <h4 className="text-lg font-semibold text-green-800 mb-4">{t('profile.currentMedications')}</h4>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Anything you are taking?</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.medicationsQuestion')}</label>
                     <textarea
                       value={newConsultation.medications}
                       onChange={(e) => setNewConsultation({...newConsultation, medications: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-20"
-                      placeholder="Prescribed medicine / Over-the-counter medicine / Vitamins or supplements"
+                      placeholder={t('profile.medicationsPlaceholder')}
                     />
                   </div>
                 </div>
 
                 {/* 5. Symptoms Checklist */}
                 <div className="bg-purple-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-4">5. Symptoms Checklist</h4>
+                  <h4 className="text-lg font-semibold text-purple-800 mb-4">{t('profile.symptomsChecklist')}</h4>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { key: 'fever' as const, label: 'Fever' },
-                      { key: 'pain' as const, label: 'Pain' },
-                      { key: 'nausea' as const, label: 'Nausea' },
-                      { key: 'cough' as const, label: 'Cough' },
-                      { key: 'dizziness' as const, label: 'Dizziness' },
-                      { key: 'fatigue' as const, label: 'Fatigue' }
+                      { key: 'fever' as const, label: t('profile.fever') },
+                      { key: 'pain' as const, label: t('profile.pain') },
+                      { key: 'nausea' as const, label: t('profile.nausea') },
+                      { key: 'cough' as const, label: t('profile.cough') },
+                      { key: 'dizziness' as const, label: t('profile.dizziness') },
+                      { key: 'fatigue' as const, label: t('profile.fatigue') }
                     ].map(symptom => (
                       <label key={symptom.key} className="flex items-center gap-2">
                         <input
@@ -1201,36 +1203,36 @@ ${ordonnanceContent}
 
                 {/* 6. Medical History */}
                 <div className="bg-orange-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-orange-800 mb-4">6. Medical History</h4>
+                  <h4 className="text-lg font-semibold text-orange-800 mb-4">{t('profile.medicalHistory')}</h4>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Do you have allergies?</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.allergiesQuestion')}</label>
                       <input
                         type="text"
                         value={newConsultation.allergies}
                         onChange={(e) => setNewConsultation({...newConsultation, allergies: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Penicillin, Peanuts, etc."
+                        placeholder={t('profile.allergiesPlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Do you have chronic conditions?</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.chronicQuestion')}</label>
                       <input
                         type="text"
                         value={newConsultation.chronicConditions}
                         onChange={(e) => setNewConsultation({...newConsultation, chronicConditions: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Asthma, Diabetes, etc."
+                        placeholder={t('profile.chronicPlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Have you had recent surgeries?</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.surgeriesQuestion')}</label>
                       <input
                         type="text"
                         value={newConsultation.surgeries}
                         onChange={(e) => setNewConsultation({...newConsultation, surgeries: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Date and type of surgery"
+                        placeholder={t('profile.surgeriesPlaceholder')}
                       />
                     </div>
                   </div>
@@ -1238,24 +1240,24 @@ ${ordonnanceContent}
 
                 {/* 7. Family Medical History */}
                 <div className="bg-pink-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-pink-800 mb-4">7. Family Medical History (Optional)</h4>
+                  <h4 className="text-lg font-semibold text-pink-800 mb-4">{t('profile.familyHistoryTitle')}</h4>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Does anyone in your family have genetic conditions?</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.familyQuestion')}</label>
                     <textarea
                       value={newConsultation.familyHistory}
                       onChange={(e) => setNewConsultation({...newConsultation, familyHistory: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-16"
-                      placeholder="Diabetes, heart disease, etc. in family members"
+                      placeholder={t('profile.familyPlaceholder')}
                     />
                   </div>
                 </div>
 
                 {/* Consultation Details */}
                 <div className="bg-slate-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-slate-800 mb-4">Consultation Details</h4>
+                  <h4 className="text-lg font-semibold text-slate-800 mb-4">{t('profile.consultationDetails')}</h4>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.date')}</label>
                       <input
                         type="date"
                         value={newConsultation.date}
@@ -1264,23 +1266,23 @@ ${ordonnanceContent}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Doctor</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.doctor')}</label>
                       <input
                         type="text"
                         value={newConsultation.doctor}
                         onChange={(e) => setNewConsultation({...newConsultation, doctor: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Doctor name"
+                        placeholder={t('profile.doctorPlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Diagnosis</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.diagnosis')}</label>
                       <input
                         type="text"
                         value={newConsultation.diagnosis}
                         onChange={(e) => setNewConsultation({...newConsultation, diagnosis: e.target.value})}
                         className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                        placeholder="Diagnosis"
+                        placeholder={t('profile.diagnosisPlaceholder')}
                       />
                     </div>
                   </div>
@@ -1295,14 +1297,14 @@ ${ordonnanceContent}
                 onClick={() => setShowConsultationModal(false)}
                 className="flex-1"
               >
-                Cancel
+                {t('profile.cancel')}
               </Button>
               <Button
                 onClick={handleAddConsultation}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
                 disabled={!newConsultation.complaint || !newConsultation.date || !newConsultation.doctor}
               >
-                Add Consultation
+                {t('profile.addConsultation')}
               </Button>
             </div>
           </div>
@@ -1316,7 +1318,7 @@ ${ordonnanceContent}
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
               <h3 className="text-xl font-semibold text-slate-800">
-                Consultation Details
+                {t('profile.consultationDetailsTitle')}
               </h3>
               <Button
                 variant="ghost"
@@ -1332,30 +1334,30 @@ ${ordonnanceContent}
               <div className="space-y-6">
                 {/* Basic Information */}
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-4">Basic Information</h4>
+                  <h4 className="text-lg font-semibold text-blue-800 mb-4">{t('profile.basicInformation')}</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.name')}</label>
                       <p className="text-slate-800">{selectedConsultation.name}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.age')}</label>
                       <p className="text-slate-800">{selectedConsultation.age}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Sex</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.sex')}</label>
                       <p className="text-slate-800">{selectedConsultation.sex}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.contact')}</label>
                       <p className="text-slate-800">{selectedConsultation.contact}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Weight</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.weight')}</label>
                       <p className="text-slate-800">{selectedConsultation.weight}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Height</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.height')}</label>
                       <p className="text-slate-800">{selectedConsultation.height}</p>
                     </div>
                   </div>
@@ -1363,35 +1365,35 @@ ${ordonnanceContent}
 
                 {/* Main Complaint */}
                 <div className="bg-red-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-red-800 mb-4">Main Complaint</h4>
+                  <h4 className="text-lg font-semibold text-red-800 mb-4">{t('profile.mainComplaintTitle')}</h4>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Complaint</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.complaintLabel')}</label>
                     <p className="text-slate-800">{selectedConsultation.complaint}</p>
                   </div>
                 </div>
 
                 {/* History of the Problem */}
                 <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-yellow-800 mb-4">History of the Problem</h4>
+                  <h4 className="text-lg font-semibold text-yellow-800 mb-4">{t('profile.historyProblemTitle')}</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">When Started</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.whenStartedLabel')}</label>
                       <p className="text-slate-800">{selectedConsultation.when_started}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">How Often</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.howOftenLabel')}</label>
                       <p className="text-slate-800">{selectedConsultation.how_often}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Getting Better</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.gettingBetterLabel')}</label>
                       <p className="text-slate-800">{selectedConsultation.getting_better}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Triggers</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.triggersLabel')}</label>
                       <p className="text-slate-800">{selectedConsultation.triggers}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Makes Better</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.makesBetterLabel')}</label>
                       <p className="text-slate-800">{selectedConsultation.makes_better}</p>
                     </div>
                   </div>
@@ -1399,81 +1401,81 @@ ${ordonnanceContent}
 
                 {/* Current Medications */}
                 <div className="bg-purple-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-4">Current Medications</h4>
-                  <p className="text-slate-800">{selectedConsultation.medications || 'None'}</p>
+                  <h4 className="text-lg font-semibold text-purple-800 mb-4">{t('profile.currentMedicationsTitle')}</h4>
+                  <p className="text-slate-800">{selectedConsultation.medications || t('profile.none')}</p>
                 </div>
 
                 {/* Symptoms Checklist */}
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-green-800 mb-4">Symptoms Checklist</h4>
+                  <h4 className="text-lg font-semibold text-green-800 mb-4">{t('profile.symptomsChecklist')}</h4>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="flex items-center gap-2">
                       <span className={`w-3 h-3 rounded-full ${selectedConsultation.fever ? 'bg-green-600' : 'bg-gray-300'}`}></span>
-                      <span className="text-slate-800">Fever</span>
+                      <span className="text-slate-800">{t('profile.fever')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`w-3 h-3 rounded-full ${selectedConsultation.pain ? 'bg-green-600' : 'bg-gray-300'}`}></span>
-                      <span className="text-slate-800">Pain</span>
+                      <span className="text-slate-800">{t('profile.pain')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`w-3 h-3 rounded-full ${selectedConsultation.nausea ? 'bg-green-600' : 'bg-gray-300'}`}></span>
-                      <span className="text-slate-800">Nausea</span>
+                      <span className="text-slate-800">{t('profile.nausea')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`w-3 h-3 rounded-full ${selectedConsultation.cough ? 'bg-green-600' : 'bg-gray-300'}`}></span>
-                      <span className="text-slate-800">Cough</span>
+                      <span className="text-slate-800">{t('profile.cough')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`w-3 h-3 rounded-full ${selectedConsultation.dizziness ? 'bg-green-600' : 'bg-gray-300'}`}></span>
-                      <span className="text-slate-800">Dizziness</span>
+                      <span className="text-slate-800">{t('profile.dizziness')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`w-3 h-3 rounded-full ${selectedConsultation.fatigue ? 'bg-green-600' : 'bg-gray-300'}`}></span>
-                      <span className="text-slate-800">Fatigue</span>
+                      <span className="text-slate-800">{t('profile.fatigue')}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Medical History */}
                 <div className="bg-orange-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-orange-800 mb-4">Medical History</h4>
+                  <h4 className="text-lg font-semibold text-orange-800 mb-4">{t('profile.medicalHistoryTitle')}</h4>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Allergies</label>
-                      <p className="text-slate-800">{selectedConsultation.allergies || 'None'}</p>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.allergies')}</label>
+                      <p className="text-slate-800">{selectedConsultation.allergies || t('profile.none')}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Chronic Conditions</label>
-                      <p className="text-slate-800">{selectedConsultation.chronic_conditions || 'None'}</p>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.chronicConditionsLabel')}</label>
+                      <p className="text-slate-800">{selectedConsultation.chronic_conditions || t('profile.none')}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Surgeries</label>
-                      <p className="text-slate-800">{selectedConsultation.surgeries || 'None'}</p>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.surgeriesLabel')}</label>
+                      <p className="text-slate-800">{selectedConsultation.surgeries || t('profile.none')}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Family Medical History */}
                 <div className="bg-pink-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-pink-800 mb-4">Family Medical History</h4>
-                  <p className="text-slate-800">{selectedConsultation.family_history || 'None'}</p>
+                  <h4 className="text-lg font-semibold text-pink-800 mb-4">{t('profile.familyMedicalHistory')}</h4>
+                  <p className="text-slate-800">{selectedConsultation.family_history || t('profile.none')}</p>
                 </div>
 
                 {/* Consultation Details */}
                 <div className="bg-indigo-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold text-indigo-800 mb-4">Consultation Details</h4>
+                  <h4 className="text-lg font-semibold text-indigo-800 mb-4">{t('profile.consultationDetails')}</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.date')}</label>
                       <p className="text-slate-800">{new Date(selectedConsultation.date).toLocaleString()}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Doctor</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.doctor')}</label>
                       <p className="text-slate-800">{selectedConsultation.doctor}</p>
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Diagnosis</label>
-                      <p className="text-slate-800">{selectedConsultation.diagnosis || 'Not specified'}</p>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.diagnosis')}</label>
+                      <p className="text-slate-800">{selectedConsultation.diagnosis || t('profile.notSpecified')}</p>
                     </div>
                   </div>
                 </div>
@@ -1487,7 +1489,7 @@ ${ordonnanceContent}
                 onClick={() => setShowConsultationDetails(false)}
                 className="flex-1"
               >
-                Close
+                {t('profile.close')}
               </Button>
             </div>
           </div>
@@ -1501,7 +1503,7 @@ ${ordonnanceContent}
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
               <h3 className="text-xl font-semibold text-slate-800">
-                Edit Patient Profile
+                {t('profile.editPatientProfile')}
               </h3>
               <Button
                 variant="ghost"
@@ -1517,58 +1519,58 @@ ${ordonnanceContent}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Personal Information */}
                 <div className="space-y-4">
-                  <h4 className="text-lg font-semibold text-slate-800 mb-4">Personal Information</h4>
-                  
+                  <h4 className="text-lg font-semibold text-slate-800 mb-4">{t('profile.personalInformation')}</h4>
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.fullName')}</label>
                     <input
                       type="text"
                       value={editForm.full_name}
                       onChange={(e) => setEditForm({...editForm, full_name: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                      placeholder="Full name"
+                      placeholder={t('profile.fullNamePlaceholder')}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.email')}</label>
                     <input
                       type="email"
                       value={editForm.email}
                       onChange={(e) => setEditForm({...editForm, email: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                      placeholder="Email address"
+                      placeholder={t('profile.emailPlaceholder')}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Phone</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.phone')}</label>
                     <input
                       type="tel"
                       value={editForm.phone}
                       onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2"
-                      placeholder="Phone number"
+                      placeholder={t('profile.phonePlaceholder')}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Address</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.address')}</label>
                     <textarea
                       value={editForm.address}
                       onChange={(e) => setEditForm({...editForm, address: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-20"
-                      placeholder="Address"
+                      placeholder={t('profile.addressPlaceholder')}
                     />
                   </div>
                 </div>
 
                 {/* Medical Information */}
                 <div className="space-y-4">
-                  <h4 className="text-lg font-semibold text-slate-800 mb-4">Medical Information</h4>
-                  
+                  <h4 className="text-lg font-semibold text-slate-800 mb-4">{t('profile.medicalInformation')}</h4>
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Date of Birth</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.dateOfBirth')}</label>
                     <input
                       type="date"
                       value={editForm.date_of_birth}
@@ -1576,29 +1578,29 @@ ${ordonnanceContent}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Gender</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.gender')}</label>
                     <select
                       value={editForm.gender}
                       onChange={(e) => setEditForm({...editForm, gender: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2"
                     >
-                      <option value="">Select</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                      <option value="">{t('profile.select')}</option>
+                      <option value="Male">{t('common.male')}</option>
+                      <option value="Female">{t('common.female')}</option>
+                      <option value="Other">{t('profile.other')}</option>
                     </select>
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Blood Type</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.bloodType')}</label>
                     <select
                       value={editForm.blood_type}
                       onChange={(e) => setEditForm({...editForm, blood_type: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2"
                     >
-                      <option value="">Select</option>
+                      <option value="">{t('profile.select')}</option>
                       <option value="A+">A+</option>
                       <option value="A-">A-</option>
                       <option value="B+">B+</option>
@@ -1611,22 +1613,22 @@ ${ordonnanceContent}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Allergies</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.allergies')}</label>
                     <textarea
                       value={editForm.allergies}
                       onChange={(e) => setEditForm({...editForm, allergies: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-20"
-                      placeholder="List any allergies (comma separated)"
+                      placeholder={t('profile.allergiesEditPlaceholder')}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Chronic Conditions</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.chronicConditionsLabel')}</label>
                     <textarea
                       value={editForm.chronic_conditions}
                       onChange={(e) => setEditForm({...editForm, chronic_conditions: e.target.value})}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-20"
-                      placeholder="List chronic conditions (comma separated)"
+                      placeholder={t('profile.chronicEditPlaceholder')}
                     />
                   </div>
                 </div>
@@ -1640,14 +1642,14 @@ ${ordonnanceContent}
                 onClick={() => setShowEditModal(false)}
                 className="flex-1"
               >
-                Cancel
+                {t('profile.cancel')}
               </Button>
               <Button
                 onClick={handleSaveProfile}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Save Changes
+                {t('profile.saveChanges')}
               </Button>
             </div>
           </div>
@@ -1662,7 +1664,7 @@ ${ordonnanceContent}
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
               <div>
-                <h3 className="text-xl font-semibold text-slate-800">File Viewer</h3>
+                <h3 className="text-xl font-semibold text-slate-800">{t('profile.fileViewer')}</h3>
                 <p className="text-sm text-slate-600 mt-1">{selectedFile.file_name}</p>
               </div>
               <Button
@@ -1684,13 +1686,13 @@ ${ordonnanceContent}
                       <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FileText className="w-8 h-8 text-slate-400" />
                       </div>
-                      <p className="text-slate-600 mb-4">Failed to load image</p>
+                      <p className="text-slate-600 mb-4">{t('profile.failedLoadImage')}</p>
                       <Button
                         onClick={() => patientsService.downloadFile(patient!.id, selectedFile.id, selectedFile.file_name)}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        Download
+                        {t('profile.download')}
                       </Button>
                     </div>
                   ) : imageSrc ? (
@@ -1709,20 +1711,20 @@ ${ordonnanceContent}
               ) : selectedFile.file_type.toLowerCase().includes('pdf') ? (
                 // PDF files
                 <div className="flex flex-col items-center gap-4">
-                  <p className="text-slate-600">PDF files cannot be previewed directly due to authentication requirements</p>
+                  <p className="text-slate-600">{t('profile.pdfNoPreview')}</p>
                   <Button
                     onClick={() => patientsService.downloadFile(patient!.id, selectedFile.id, selectedFile.file_name)}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Download PDF
+                    {t('profile.downloadPdf')}
                   </Button>
                 </div>
               ) : selectedFile.file_type.toLowerCase().includes('text') ? (
                 // Text files
                 <div className="bg-slate-50 p-4 rounded border border-slate-200">
                   <p className="text-sm text-slate-600 whitespace-pre-wrap">
-                    Text file content would be displayed here
+                    {t('profile.textContentHere')}
                   </p>
                 </div>
               ) : (
@@ -1731,13 +1733,13 @@ ${ordonnanceContent}
                   <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <FileText className="w-8 h-8 text-slate-400" />
                   </div>
-                  <p className="text-slate-600 mb-4">This file type cannot be previewed</p>
+                  <p className="text-slate-600 mb-4">{t('profile.cannotPreview')}</p>
                   <Button
                     onClick={() => patientsService.downloadFile(patient!.id, selectedFile.id, selectedFile.file_name)}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Download File
+                    {t('profile.downloadFile')}
                   </Button>
                 </div>
               )}
@@ -1747,11 +1749,11 @@ ${ordonnanceContent}
             <div className="flex gap-3 p-6 border-t border-slate-200 bg-slate-50">
               <div className="flex-1">
                 <p className="text-sm text-slate-600">
-                  File Type: <span className="font-medium">{selectedFile.file_type}</span>
+                  {t('profile.fileTypeLabel')}: <span className="font-medium">{selectedFile.file_type}</span>
                 </p>
                 <p className="text-sm text-slate-600">
-                  Created: <span className="font-medium">
-                    {selectedFile.created_at ? new Date(selectedFile.created_at).toLocaleDateString() : 'Unknown'}
+                  {t('profile.createdLabel')}: <span className="font-medium">
+                    {selectedFile.created_at ? new Date(selectedFile.created_at).toLocaleDateString() : t('profile.unknown')}
                   </span>
                 </p>
               </div>
@@ -1761,13 +1763,13 @@ ${ordonnanceContent}
                   variant="outline"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download
+                  {t('profile.download')}
                 </Button>
                 <Button
                   onClick={() => setShowFileViewer(false)}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  Close
+                  {t('profile.close')}
                 </Button>
               </div>
             </div>
