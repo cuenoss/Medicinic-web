@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { Mail, Lock, User, Phone, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -8,6 +9,7 @@ import { Card } from '../ui/card';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function RegisterScreen() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register, isLoading, error } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -43,21 +45,21 @@ export function RegisterScreen() {
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-semibold text-slate-800 mb-2">
-          Create Account
+          {t('auth.createAccount')}
         </h1>
-        <p className="text-slate-600">Register your clinic profile</p>
+        <p className="text-slate-600">{t('auth.registerSubtitle')}</p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleRegister} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="fullName">Full Name</Label>
+          <Label htmlFor="fullName">{t('auth.fullName')}</Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
               id="fullName"
               type="text"
-              placeholder="Dr. John Smith"
+              placeholder={t('auth.fullNamePlaceholder')}
               value={formData.fullName}
               onChange={(e) =>
                 setFormData({ ...formData, fullName: e.target.value })
@@ -69,13 +71,13 @@ export function RegisterScreen() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="email">{t('auth.emailAddress')}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
               id="email"
               type="email"
-              placeholder="doctor@clinic.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
@@ -87,13 +89,13 @@ export function RegisterScreen() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number</Label>
+          <Label htmlFor="phone">{t('auth.phoneNumber')}</Label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
               id="phone"
               type="tel"
-              placeholder="+1 (555) 000-0000"
+              placeholder={t('auth.phonePlaceholder')}
               value={formData.phone}
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
@@ -105,13 +107,13 @@ export function RegisterScreen() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t('auth.password')}</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              placeholder="Create a strong password"
+              placeholder={t('auth.passwordCreatePlaceholder')}
               value={formData.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
@@ -134,13 +136,13 @@ export function RegisterScreen() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="Re-enter your password"
+              placeholder={t('auth.confirmPasswordPlaceholder')}
               value={formData.confirmPassword}
               onChange={(e) =>
                 setFormData({ ...formData, confirmPassword: e.target.value })
@@ -158,13 +160,13 @@ export function RegisterScreen() {
             required
           />
           <span className="text-slate-600">
-            I agree to the{' '}
+            {t('auth.agreeTerms')}{' '}
             <a href="#" className="text-blue-600 hover:text-blue-700">
-              Terms of Service
+              {t('auth.termsOfService')}
             </a>{' '}
-            and{' '}
+            {t('auth.and')}{' '}
             <a href="#" className="text-blue-600 hover:text-blue-700">
-              Privacy Policy
+              {t('auth.privacyPolicy')}
             </a>
           </span>
         </div>
@@ -182,18 +184,18 @@ export function RegisterScreen() {
           className="w-full bg-blue-600 hover:bg-blue-700"
           disabled={isLoading}
         >
-          {isLoading ? 'Creating Account...' : 'Create Account'}
+          {isLoading ? t('auth.creatingAccount') : t('auth.createAccount')}
         </Button>
       </form>
 
       {/* Login Link */}
       <div className="mt-6 text-center text-sm">
-        <span className="text-slate-600">Already have an account? </span>
+        <span className="text-slate-600">{t('auth.hasAccount')} </span>
         <Link
           to="/auth/login"
           className="text-blue-600 hover:text-blue-700 font-medium"
         >
-          Sign in
+          {t('auth.signIn')}
         </Link>
       </div>
     </Card>

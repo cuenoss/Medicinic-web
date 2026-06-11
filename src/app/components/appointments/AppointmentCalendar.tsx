@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight, Plus, Clock, User, X, Calendar } from 'lucide-react';
 import { Card } from '../ui/card';
@@ -7,6 +8,7 @@ import { appointmentsService, Appointment } from '../../services/appointments';
 import { patientsService } from '../../services/patients';
 
 export function AppointmentCalendar() {
+  const { t } = useTranslation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
@@ -98,20 +100,7 @@ export function AppointmentCalendar() {
     fetchAppointments();
   }, [currentDate]); // Reload when currentDate changes
 
-  const monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
+  const monthNames = t('appointments.months', { returnObjects: true }) as string[];
 
   const daysInMonth = new Date(
     currentDate.getFullYear(),
@@ -271,10 +260,10 @@ export function AppointmentCalendar() {
       setReschedulingAppointment(null);
       setRescheduleData({ date: '', time: '' });
       
-      alert('Appointment rescheduled successfully!');
+      alert(t('appointments.rescheduledSuccess'));
     } catch (error) {
       console.error('Failed to reschedule appointment:', error);
-      alert('Failed to reschedule appointment. Please try again.');
+      alert(t('appointments.rescheduleFailed'));
     }
   };
 
@@ -340,7 +329,7 @@ export function AppointmentCalendar() {
         
         // Show user-friendly error message
         const errorMessage = error as Error;
-        alert(`Error: ${errorMessage.message || 'Failed to create appointment'}`);
+        alert(`${t('appointments.error')}: ${errorMessage.message || t('appointments.createFailed')}`);
       }
     }
   };
@@ -367,20 +356,20 @@ export function AppointmentCalendar() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-slate-800 mb-2">
-            Appointments
+            {t('appointments.title')}
           </h1>
-          <p className="text-slate-600">Manage your appointment schedule</p>
+          <p className="text-slate-600">{t('appointments.subtitle')}</p>
         </div>
         <div className="flex gap-3">
           <Link to="/appointments/schedule">
             <Button variant="outline">
               <Clock className="w-5 h-5 mr-2" />
-              Daily Schedule
+              {t('appointments.dailySchedule')}
             </Button>
           </Link>
           <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowNewAppointmentModal(true)}>
             <Plus className="w-5 h-5 mr-2" />
-            New Appointment
+            {t('appointments.newAppointment')}
           </Button>
         </div>
       </div>
@@ -405,7 +394,7 @@ export function AppointmentCalendar() {
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-2">
           {/* Day Headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+          {(t('appointments.daysShort', { returnObjects: true }) as string[]).map((day) => (
             <div
               key={day}
               className="text-center text-sm font-medium text-slate-600 py-2"
@@ -464,7 +453,7 @@ export function AppointmentCalendar() {
                         : 'bg-yellow-500 text-yellow-900'
                     }`}
                   >
-                    {appointmentCount} {appointmentCount === 1 ? 'apt' : 'apts'}
+                    {appointmentCount} {appointmentCount === 1 ? t('appointments.apt') : t('appointments.apts')}
                   </div>
                 )}
               </div>
@@ -476,15 +465,15 @@ export function AppointmentCalendar() {
         <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-slate-200">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-blue-600 rounded"></div>
-            <span className="text-sm text-slate-600">Today</span>
+            <span className="text-sm text-slate-600">{t('appointments.today')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-yellow-300 border border-yellow-500 rounded"></div>
-            <span className="text-sm text-slate-600">Future Appointments (After Today)</span>
+            <span className="text-sm text-slate-600">{t('appointments.futureAppointments')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-gray-50 border border-gray-200 rounded"></div>
-            <span className="text-sm text-slate-600">Past Days</span>
+            <span className="text-sm text-slate-600">{t('appointments.pastDays')}</span>
           </div>
         </div>
       </Card>
@@ -496,7 +485,7 @@ export function AppointmentCalendar() {
           <Card className="w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-800">
-                {selectedDay ? `Rendez-vous - ${monthNames[currentDate.getMonth()]} ${selectedDay}` : 'New Appointment'}
+                {selectedDay ? `${t('appointments.appointmentLabel')} - ${monthNames[currentDate.getMonth()]} ${selectedDay}` : t('appointments.newAppointment')}
               </h3>
               <Button
                 variant="ghost"
@@ -511,20 +500,20 @@ export function AppointmentCalendar() {
               {selectedDay && (
                 <div className="bg-green-50 p-3 rounded-lg mb-4">
                   <p className="text-sm font-medium text-green-800">
-                    Selected Date: {monthNames[currentDate.getMonth()]} {selectedDay}, {currentDate.getFullYear()}
+                    {t('appointments.selectedDate')}: {monthNames[currentDate.getMonth()]} {selectedDay}, {currentDate.getFullYear()}
                   </p>
                 </div>
               )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Phone Number
+                  {t('appointments.phoneNumber')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <User className="w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Enter patient phone number"
+                    placeholder={t('appointments.enterPhone')}
                     value={newAppointment.phoneNumber}
                     onChange={(e) => {
                       setNewAppointment({
@@ -542,7 +531,7 @@ export function AppointmentCalendar() {
                 {searchedPatient && (
                   <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <p className="text-sm font-medium text-green-800">
-                      Found: {searchedPatient.full_name}
+                      {t('appointments.found')}: {searchedPatient.full_name}
                     </p>
                     <p className="text-xs text-green-600">
                       ID: {searchedPatient.id} | Phone: {searchedPatient.phone}
@@ -552,7 +541,7 @@ export function AppointmentCalendar() {
                 {newAppointment.phoneNumber && !searchedPatient && !searching && (
                   <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-sm text-red-600">
-                      No patient found with this phone number
+                      {t('appointments.noPatientFound')}
                     </p>
                   </div>
                 )}
@@ -560,7 +549,7 @@ export function AppointmentCalendar() {
             
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Appointment Time
+                  {t('appointments.appointmentTime')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Clock className="w-4 h-4 text-slate-400" />
@@ -584,15 +573,14 @@ export function AppointmentCalendar() {
                   onClick={() => setShowNewAppointmentModal(false)}
                   className="flex-1"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   onClick={handleAddToCalendar}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   disabled={!newAppointment.patientId || !newAppointment.day || !newAppointment.time || !newAppointment.date}
-                  title={`Button disabled: ${!newAppointment.patientId ? 'No valid patient' : ''} ${!newAppointment.day ? 'No day' : ''} ${!newAppointment.time ? 'No time' : ''} ${!newAppointment.date ? 'No date' : ''}`}
                 >
-                  Add to Calendar
+                  {t('appointments.addToCalendar')}
                 </Button>
               </div>
             </div>
@@ -606,7 +594,7 @@ export function AppointmentCalendar() {
           <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-800">
-                Appointments for {selectedDate && (() => {
+                {t('appointments.appointmentsFor')} {selectedDate && (() => {
                   const [year, month, day] = selectedDate.split('-');
                   const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
                   return date.toLocaleDateString('en-US', { 
@@ -628,37 +616,37 @@ export function AppointmentCalendar() {
 
             {appointmentsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="text-slate-600">Loading appointments...</div>
+                <div className="text-slate-600">{t('appointments.loadingAppointments')}</div>
               </div>
             ) : selectedDateAppointments.length === 0 ? (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-600 mb-4">No appointments scheduled for this day</p>
-                <Button 
+                <p className="text-slate-600 mb-4">{t('appointments.noAppointmentsDay')}</p>
+                <Button
                   className="bg-blue-600 hover:bg-blue-700"
                   onClick={() => {
                     setShowAppointmentsModal(false);
                     setShowNewAppointmentModal(true);
-                    setNewAppointment({ 
-                      phoneNumber: '', 
-                      day: selectedDay?.toString() || '', 
-                      time: '', 
-                      date: selectedDate, 
-                      patientId: null, 
-                      patientName: '' 
+                    setNewAppointment({
+                      phoneNumber: '',
+                      day: selectedDay?.toString() || '',
+                      time: '',
+                      date: selectedDate,
+                      patientId: null,
+                      patientName: ''
                     });
                     setSearchedPatient(null);
                   }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Appointment
+                  {t('appointments.addAppointment')}
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-sm text-slate-600">
-                    {selectedDateAppointments.length} appointment{selectedDateAppointments.length !== 1 ? 's' : ''} scheduled
+                    {selectedDateAppointments.length} {t('appointments.appointmentsScheduled')}
                   </p>
                   <Button 
                     size="sm" 
@@ -678,10 +666,10 @@ export function AppointmentCalendar() {
                     }}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Appointment
+                    {t('appointments.addAppointment')}
                   </Button>
                 </div>
-                
+
                 {selectedDateAppointments.map((appointment) => (
                   <div
                     key={appointment.id}
@@ -694,7 +682,7 @@ export function AppointmentCalendar() {
                         <p className="font-semibold text-slate-800">
                           {appointment.time}
                         </p>
-                        <p className="text-xs text-slate-500">Appointment</p>
+                        <p className="text-xs text-slate-500">{t('appointments.appointmentLabel')}</p>
                       </div>
                     </div>
 
@@ -733,10 +721,10 @@ export function AppointmentCalendar() {
                             size="sm"
                             onClick={() => handleRescheduleAppointment(appointment)}
                           >
-                            Reschedule
+                            {t('appointments.reschedule')}
                           </Button>
                           <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                            Start Consultation
+                            {t('appointments.startConsultation')}
                           </Button>
                         </div>
                       </div>
@@ -755,7 +743,7 @@ export function AppointmentCalendar() {
           <Card className="w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-800">
-                Reschedule Appointment
+                {t('appointments.rescheduleAppointment')}
               </h3>
               <Button
                 variant="ghost"
@@ -769,19 +757,19 @@ export function AppointmentCalendar() {
             <div className="space-y-4">
               <div className="bg-slate-50 p-3 rounded-lg mb-4">
                 <p className="text-sm font-medium text-slate-800 mb-1">
-                  Patient: {reschedulingAppointment.patient_name}
+                  {t('appointments.patient')}: {reschedulingAppointment.patient_name}
                 </p>
                 <p className="text-sm text-slate-600 mb-1">
-                  Phone: {reschedulingAppointment.phone_number}
+                  {t('appointments.phone')}: {reschedulingAppointment.phone_number}
                 </p>
                 <p className="text-sm text-slate-600">
-                  Current: {reschedulingAppointment.date} at {reschedulingAppointment.time}
+                  {t('appointments.current')}: {reschedulingAppointment.date} {t('appointments.at')} {reschedulingAppointment.time}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  New Date
+                  {t('appointments.newDate')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Calendar className="w-4 h-4 text-slate-400" />
@@ -801,7 +789,7 @@ export function AppointmentCalendar() {
             
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  New Time
+                  {t('appointments.newTime')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Clock className="w-4 h-4 text-slate-400" />
@@ -825,14 +813,14 @@ export function AppointmentCalendar() {
                   onClick={() => setShowRescheduleModal(false)}
                   className="flex-1"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   onClick={handleSaveReschedule}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   disabled={!rescheduleData.date || !rescheduleData.time}
                 >
-                  Save Changes
+                  {t('appointments.saveChanges')}
                 </Button>
               </div>
             </div>

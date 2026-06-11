@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   Users,
@@ -23,6 +24,7 @@ import { patientsService } from '../../services/patients';
 import { financeService } from '../../services/finance';
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
   const [newPatient, setNewPatient] = useState({
@@ -88,25 +90,25 @@ export function Dashboard() {
   }, []);
   const statsCards = [
     {
-      label: 'Total Patients',
+      label: t('dashboard.totalPatients'),
       value: dashboardStats.totalPatients,
       icon: Users,
       color: 'bg-blue-500',
     },
     {
-      label: "Today's Appointments",
+      label: t('dashboard.todayAppointments'),
       value: dashboardStats.todayAppointments,
       icon: Calendar,
       color: 'bg-green-500',
     },
     {
-      label: 'Total Revenue',
+      label: t('dashboard.totalRevenue'),
       value: `${dashboardStats.totalRevenue} DA`,
       icon: TrendingUp,
       color: 'bg-purple-500',
     },
     {
-      label: 'Total Expense',
+      label: t('dashboard.totalExpense'),
       value: `${dashboardStats.totalExpense || '0.00'} DA`,
       icon: DollarSign,
       color: 'bg-red-500',
@@ -236,8 +238,8 @@ export function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-800 mb-2">Dashboard</h1>
-        <p className="text-slate-600">Welcome back, {user?.fullName || 'Doctor'}</p>
+        <h1 className="text-3xl font-semibold text-slate-800 mb-2">{t('dashboard.title')}</h1>
+        <p className="text-slate-600">{t('dashboard.welcome')}, {user?.fullName || 'Doctor'}</p>
       </div>
 
       {/* Doctor Profile Card */}
@@ -250,7 +252,7 @@ export function Dashboard() {
           </Avatar>
           <div className="flex-1">
             <h2 className="text-xl font-semibold mb-1">Dr. {user?.fullName || 'Loading...'}</h2>
-            <p className="text-blue-100">General Practitioner</p>
+            <p className="text-blue-100">{t('dashboard.generalPractitioner')}</p>
             <p className="text-sm text-blue-100 mt-1">{user?.email || 'doctor@clinic.com'}</p>
           </div>
         </div>
@@ -295,23 +297,23 @@ export function Dashboard() {
       {/* Quick Actions */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">
-          Quick Actions
+          {t('dashboard.quickActions')}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setShowAddPatientModal(true)}>
               <UserPlus className="w-5 h-5 mr-2" />
-              Add Patient
+              {t('dashboard.addPatient')}
             </Button>
           <Link to="/patients">
             <Button variant="outline" className="w-full">
               <Search className="w-5 h-5 mr-2" />
-              Search Patient
+              {t('dashboard.searchPatient')}
             </Button>
           </Link>
           <Link to="/appointments">
             <Button variant="outline" className="w-full">
               <Calendar className="w-5 h-5 mr-2" />
-              View Appointments
+              {t('dashboard.viewAppointments')}
             </Button>
           </Link>
         </div>
@@ -324,7 +326,7 @@ export function Dashboard() {
           <Card className="w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-800">
-                Add Patient
+                {t('dashboard.addPatient')}
               </h3>
               <Button
                 variant="ghost"
@@ -338,13 +340,13 @@ export function Dashboard() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Patient Name
+                  {t('dashboard.patientName')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <UserPlus className="w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Enter patient name"
+                    placeholder={t('dashboard.enterPatientName')}
                     value={newPatient.name}
                     onChange={(e) =>
                       setNewPatient({
@@ -360,12 +362,12 @@ export function Dashboard() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Age
+                    {t('dashboard.age')}
                   </label>
                   <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                     <input
                       type="number"
-                      placeholder="Age"
+                      placeholder={t('dashboard.age')}
                       value={newPatient.age}
                       onChange={(e) =>
                         setNewPatient({
@@ -380,7 +382,7 @@ export function Dashboard() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Gender
+                    {t('dashboard.gender')}
                   </label>
                   <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                     <select
@@ -393,10 +395,10 @@ export function Dashboard() {
                       }
                       className="flex-1 outline-none text-slate-800 bg-transparent"
                     >
-                      <option value="">Select...</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                      <option value="">{t('common.select')}</option>
+                      <option value="Male">{t('common.male')}</option>
+                      <option value="Female">{t('common.female')}</option>
+                      <option value="Other">{t('common.other')}</option>
                     </select>
                   </div>
                 </div>
@@ -404,7 +406,7 @@ export function Dashboard() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Phone Number
+                  {t('dashboard.phoneNumber')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <input
@@ -424,7 +426,7 @@ export function Dashboard() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Email Address
+                  {t('dashboard.emailAddress')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <input
@@ -444,7 +446,7 @@ export function Dashboard() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Amount Paid
+                  {t('dashboard.amountPaid')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <DollarSign className="w-4 h-4 text-slate-400" />
@@ -465,7 +467,7 @@ export function Dashboard() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Day
+                  {t('dashboard.day')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Calendar className="w-4 h-4 text-slate-400" />
@@ -485,7 +487,7 @@ export function Dashboard() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Appointment Time
+                  {t('dashboard.appointmentTime')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Clock className="w-4 h-4 text-slate-400" />
@@ -509,14 +511,14 @@ export function Dashboard() {
                   onClick={() => setShowAddPatientModal(false)}
                   className="flex-1"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   onClick={handleAddToCalendar}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   disabled={!newPatient.name || !newPatient.age || !newPatient.gender || !newPatient.phone || !newPatient.email || !newPatient.amount || !newPatient.day || !newPatient.time}
                 >
-                  Add to Calendar
+                  {t('dashboard.addToCalendar')}
                 </Button>
               </div>
             </div>

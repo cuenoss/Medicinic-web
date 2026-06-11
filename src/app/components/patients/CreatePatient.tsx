@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router';
 import { ArrowLeft, User, Mail, Phone, MapPin, Calendar } from 'lucide-react';
 import { Card } from '../ui/card';
@@ -7,6 +8,7 @@ import { Input } from '../ui/input';
 import { patientsService } from '../../services/patients';
 
 export function CreatePatient() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,7 +38,7 @@ export function CreatePatient() {
     e.preventDefault();
     
     if (!formData.full_name || !formData.email || !formData.phone) {
-      alert('Please fill in all required fields (Name, Email, Phone)');
+      alert(t('patients.requiredFieldsAlert'));
       return;
     }
 
@@ -44,11 +46,11 @@ export function CreatePatient() {
       setLoading(true);
       const newPatient = await patientsService.createPatient(formData);
       console.log('Patient created successfully:', newPatient);
-      alert('Patient created successfully!');
+      alert(t('patients.createdSuccess'));
       navigate(`/patients/${newPatient.id}`);
     } catch (error) {
       console.error('Failed to create patient:', error);
-      alert('Failed to create patient. Please try again.');
+      alert(t('patients.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -61,12 +63,12 @@ export function CreatePatient() {
         <Link to="/patients">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Patients
+            {t('patients.backToPatients')}
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800">Add New Patient</h1>
-          <p className="text-slate-600">Fill in the patient information below</p>
+          <h1 className="text-2xl font-semibold text-slate-800">{t('patients.addNewPatient')}</h1>
+          <p className="text-slate-600">{t('patients.fillInfo')}</p>
         </div>
       </div>
 
@@ -80,46 +82,46 @@ export function CreatePatient() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <User className="w-5 h-5" />
-                  Personal Information
+                  {t('patients.personalInfo')}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.fullName')} *</label>
                     <Input
                       value={formData.full_name}
                       onChange={(e) => handleInputChange('full_name', e.target.value)}
-                      placeholder="Enter patient's full name"
+                      placeholder={t('patients.enterFullName')}
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Gender</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.gender')}</label>
                     <select
                       value={formData.gender}
                       onChange={(e) => handleInputChange('gender', e.target.value)}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2"
                     >
-                      <option value="">Select gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                      <option value="">{t('patients.selectGender')}</option>
+                      <option value="Male">{t('common.male')}</option>
+                      <option value="Female">{t('common.female')}</option>
+                      <option value="Other">{t('common.other')}</option>
                     </select>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Age</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.age')}</label>
                     <Input
                       type="number"
                       value={formData.age}
                       onChange={(e) => handleInputChange('age', e.target.value)}
-                      placeholder="Enter age"
+                      placeholder={t('patients.enterAge')}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Date of Birth</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.dateOfBirth')}</label>
                     <Input
                       type="date"
                       value={formData.date_of_birth}
@@ -133,38 +135,38 @@ export function CreatePatient() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <Mail className="w-5 h-5" />
-                  Contact Information
+                  {t('patients.contactInfo')}
                 </h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Email *</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.email')} *</label>
                     <Input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="Enter email address"
+                      placeholder={t('patients.enterEmail')}
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Phone *</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.phone')} *</label>
                     <Input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="Enter phone number"
+                      placeholder={t('patients.enterPhone')}
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Address</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.address')}</label>
                     <textarea
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
-                      placeholder="Enter address"
+                      placeholder={t('patients.enterAddress')}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-20"
                     />
                   </div>
@@ -178,18 +180,18 @@ export function CreatePatient() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
-                  Medical Information
+                  {t('patients.medicalInfo')}
                 </h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Blood Type</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.bloodType')}</label>
                     <select
                       value={formData.blood_type}
                       onChange={(e) => handleInputChange('blood_type', e.target.value)}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2"
                     >
-                      <option value="">Select blood type</option>
+                      <option value="">{t('patients.selectBloodType')}</option>
                       <option value="A+">A+</option>
                       <option value="A-">A-</option>
                       <option value="B+">B+</option>
@@ -202,21 +204,21 @@ export function CreatePatient() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Allergies</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.allergies')}</label>
                     <textarea
                       value={formData.allergies}
                       onChange={(e) => handleInputChange('allergies', e.target.value)}
-                      placeholder="Enter known allergies (separate with commas)"
+                      placeholder={t('patients.enterAllergies')}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-20"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Chronic Conditions</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.chronicConditions')}</label>
                     <textarea
                       value={formData.chronic_conditions}
                       onChange={(e) => handleInputChange('chronic_conditions', e.target.value)}
-                      placeholder="Enter chronic conditions (separate with commas)"
+                      placeholder={t('patients.enterChronicConditions')}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 h-20"
                     />
                   </div>
@@ -227,26 +229,26 @@ export function CreatePatient() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <Phone className="w-5 h-5" />
-                  Emergency Contact
+                  {t('patients.emergencyContact')}
                 </h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Emergency Contact Name</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.emergencyContactName')}</label>
                     <Input
                       value={formData.emergency_contact_name}
                       onChange={(e) => handleInputChange('emergency_contact_name', e.target.value)}
-                      placeholder="Enter emergency contact name"
+                      placeholder={t('patients.enterEmergencyName')}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Emergency Contact Phone</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">{t('patients.emergencyContactPhone')}</label>
                     <Input
                       type="tel"
                       value={formData.emergency_contact_phone}
                       onChange={(e) => handleInputChange('emergency_contact_phone', e.target.value)}
-                      placeholder="Enter emergency contact phone"
+                      placeholder={t('patients.enterEmergencyPhone')}
                     />
                   </div>
                 </div>
@@ -262,14 +264,14 @@ export function CreatePatient() {
               onClick={() => navigate('/patients')}
               className="flex-1"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               className="flex-1 bg-blue-600 hover:bg-blue-700"
               disabled={loading}
             >
-              {loading ? 'Creating...' : 'Create Patient'}
+              {loading ? t('patients.creating') : t('patients.createPatient')}
             </Button>
           </div>
         </form>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Building,
   Clock,
@@ -19,6 +20,7 @@ import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
 
 export function Settings() {
+  const { t } = useTranslation();
   const [clinicInfo, setClinicInfo] = useState({
     name: 'MediClinic Health Center',
     address: '123 Medical Plaza, Suite 100, New York, NY 10001',
@@ -53,23 +55,23 @@ export function Settings() {
   });
 
   const handleSaveClinic = () => {
-    alert('Clinic information saved successfully!');
+    alert(t('settings.clinicSaved'));
   };
 
   const handleSaveProfile = () => {
-    alert('Profile updated successfully!');
+    alert(t('settings.profileSaved'));
   };
 
   const handleBackup = (type: string) => {
-    alert(`${type} backup initiated...`);
+    alert(`${type} ${t('settings.backupInitiated')}`);
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-slate-800 mb-2">Settings</h1>
-        <p className="text-slate-600">Manage your clinic and account settings</p>
+        <h1 className="text-3xl font-semibold text-slate-800 mb-2">{t('settings.title')}</h1>
+        <p className="text-slate-600">{t('settings.subtitle')}</p>
       </div>
 
       {/* User Profile */}
@@ -77,13 +79,13 @@ export function Settings() {
         <div className="bg-blue-600 text-white px-6 py-4">
           <div className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">User Profile</h2>
+            <h2 className="text-xl font-semibold">{t('settings.userProfile')}</h2>
           </div>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName">{t('settings.fullName')}</Label>
               <Input
                 id="fullName"
                 value={profile.fullName}
@@ -93,7 +95,7 @@ export function Settings() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="specialization">Specialization</Label>
+              <Label htmlFor="specialization">{t('settings.specialization')}</Label>
               <Input
                 id="specialization"
                 value={profile.specialization}
@@ -103,7 +105,7 @@ export function Settings() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="license">Medical License</Label>
+              <Label htmlFor="license">{t('settings.medicalLicense')}</Label>
               <Input
                 id="license"
                 value={profile.license}
@@ -113,7 +115,7 @@ export function Settings() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profileEmail">Email</Label>
+              <Label htmlFor="profileEmail">{t('settings.email')}</Label>
               <Input
                 id="profileEmail"
                 type="email"
@@ -124,7 +126,7 @@ export function Settings() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profilePhone">Phone</Label>
+              <Label htmlFor="profilePhone">{t('settings.phone')}</Label>
               <Input
                 id="profilePhone"
                 value={profile.phone}
@@ -140,7 +142,7 @@ export function Settings() {
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Save className="w-4 h-4 mr-2" />
-              Save Profile
+              {t('settings.saveProfile')}
             </Button>
           </div>
         </div>
@@ -151,12 +153,12 @@ export function Settings() {
         <div className="bg-blue-600 text-white px-6 py-4">
           <div className="flex items-center gap-2">
             <Building className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Clinic Information</h2>
+            <h2 className="text-xl font-semibold">{t('settings.clinicInfo')}</h2>
           </div>
         </div>
         <div className="p-6 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="clinicName">Clinic Name</Label>
+            <Label htmlFor="clinicName">{t('settings.clinicName')}</Label>
             <Input
               id="clinicName"
               value={clinicInfo.name}
@@ -166,7 +168,7 @@ export function Settings() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">{t('settings.address')}</Label>
             <Textarea
               id="address"
               value={clinicInfo.address}
@@ -178,7 +180,7 @@ export function Settings() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="clinicPhone">Phone</Label>
+              <Label htmlFor="clinicPhone">{t('settings.phone')}</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <Input
@@ -192,7 +194,7 @@ export function Settings() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="clinicEmail">Email</Label>
+              <Label htmlFor="clinicEmail">{t('settings.email')}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <Input
@@ -208,7 +210,7 @@ export function Settings() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
+            <Label htmlFor="website">{t('settings.website')}</Label>
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
@@ -227,7 +229,7 @@ export function Settings() {
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Save className="w-4 h-4 mr-2" />
-              Save Changes
+              {t('settings.saveChanges')}
             </Button>
           </div>
         </div>
@@ -238,14 +240,14 @@ export function Settings() {
         <div className="bg-blue-600 text-white px-6 py-4">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Working Hours</h2>
+            <h2 className="text-xl font-semibold">{t('settings.workingHours')}</h2>
           </div>
         </div>
         <div className="p-6 space-y-3">
           {Object.entries(workingHours).map(([day, hours]) => (
             <div key={day} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-              <span className="font-medium text-slate-700 capitalize w-32">
-                {day}
+              <span className="font-medium text-slate-700 w-32">
+                {t(`settings.days.${day}`)}
               </span>
               <Input
                 value={hours}
@@ -259,7 +261,7 @@ export function Settings() {
           <div className="flex justify-end pt-4">
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Save className="w-4 h-4 mr-2" />
-              Save Hours
+              {t('settings.saveHours')}
             </Button>
           </div>
         </div>
@@ -270,15 +272,15 @@ export function Settings() {
         <div className="bg-blue-600 text-white px-6 py-4">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Notification Settings</h2>
+            <h2 className="text-xl font-semibold">{t('settings.notificationSettings')}</h2>
           </div>
         </div>
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="font-medium text-slate-800">Email Notifications</p>
+              <p className="font-medium text-slate-800">{t('settings.emailNotifications')}</p>
               <p className="text-sm text-slate-600">
-                Receive notifications via email
+                {t('settings.emailNotificationsDesc')}
               </p>
             </div>
             <Switch
@@ -290,9 +292,9 @@ export function Settings() {
           </div>
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="font-medium text-slate-800">SMS Notifications</p>
+              <p className="font-medium text-slate-800">{t('settings.smsNotifications')}</p>
               <p className="text-sm text-slate-600">
-                Receive notifications via text message
+                {t('settings.smsNotificationsDesc')}
               </p>
             </div>
             <Switch
@@ -304,9 +306,9 @@ export function Settings() {
           </div>
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="font-medium text-slate-800">Appointment Reminders</p>
+              <p className="font-medium text-slate-800">{t('settings.appointmentReminders')}</p>
               <p className="text-sm text-slate-600">
-                Get reminders for upcoming appointments
+                {t('settings.appointmentRemindersDesc')}
               </p>
             </div>
             <Switch
@@ -318,9 +320,9 @@ export function Settings() {
           </div>
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="font-medium text-slate-800">Payment Alerts</p>
+              <p className="font-medium text-slate-800">{t('settings.paymentAlerts')}</p>
               <p className="text-sm text-slate-600">
-                Receive alerts for payment activities
+                {t('settings.paymentAlertsDesc')}
               </p>
             </div>
             <Switch
@@ -338,19 +340,18 @@ export function Settings() {
         <div className="bg-blue-600 text-white px-6 py-4">
           <div className="flex items-center gap-2">
             <Database className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Data Backup</h2>
+            <h2 className="text-xl font-semibold">{t('settings.dataBackup')}</h2>
           </div>
         </div>
         <div className="p-6">
           <p className="text-slate-600 mb-6">
-            Backup your clinic data to ensure you never lose important information.
-            Choose between local backup or cloud storage.
+            {t('settings.dataBackupDesc')}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="p-5 border-2 border-slate-200">
-              <h3 className="font-semibold text-slate-800 mb-2">Local Backup</h3>
+              <h3 className="font-semibold text-slate-800 mb-2">{t('settings.localBackup')}</h3>
               <p className="text-sm text-slate-600 mb-4">
-                Download and save your data locally to your device
+                {t('settings.localBackupDesc')}
               </p>
               <Button
                 onClick={() => handleBackup('Local')}
@@ -358,25 +359,25 @@ export function Settings() {
                 className="w-full"
               >
                 <Database className="w-4 h-4 mr-2" />
-                Backup Locally
+                {t('settings.backupLocally')}
               </Button>
             </Card>
             <Card className="p-5 border-2 border-blue-200 bg-blue-50">
-              <h3 className="font-semibold text-slate-800 mb-2">Cloud Backup</h3>
+              <h3 className="font-semibold text-slate-800 mb-2">{t('settings.cloudBackup')}</h3>
               <p className="text-sm text-slate-600 mb-4">
-                Securely backup your data to cloud storage
+                {t('settings.cloudBackupDesc')}
               </p>
               <Button
                 onClick={() => handleBackup('Cloud')}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
                 <Database className="w-4 h-4 mr-2" />
-                Backup to Cloud
+                {t('settings.backupToCloud')}
               </Button>
             </Card>
           </div>
           <p className="text-sm text-slate-500 mt-4">
-            Last backup: March 31, 2026 at 11:30 PM
+            {t('settings.lastBackup')}: March 31, 2026 at 11:30 PM
           </p>
         </div>
       </Card>

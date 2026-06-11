@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { Search, UserPlus, Filter, Phone, Mail, Trash2, Edit } from 'lucide-react';
 import { Card } from '../ui/card';
@@ -8,6 +9,7 @@ import { Avatar } from '../ui/avatar';
 import { api } from '../../services/api';
 
 export function PatientList() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [patients, setPatients] = useState<any[]>([]);
@@ -49,12 +51,12 @@ export function PatientList() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-800 mb-2">Patients</h1>
-          <p className="text-slate-600">{totalPatients} total patients</p>
+          <h1 className="text-3xl font-semibold text-slate-800 mb-2">{t('patients.title')}</h1>
+          <p className="text-slate-600">{totalPatients} {t('patients.totalPatients')}</p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleAddPatient}>
           <UserPlus className="w-5 h-5 mr-2" />
-          Add New Patient
+          {t('patients.addNewPatient')}
         </Button>
       </div>
 
@@ -64,7 +66,7 @@ export function PatientList() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
-              placeholder="Search patients by name..."
+              placeholder={t('patients.searchByName')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -72,7 +74,7 @@ export function PatientList() {
           </div>
           <Button variant="outline">
             <Filter className="w-5 h-5 mr-2" />
-            Filter
+            {t('common.filter')}
           </Button>
         </div>
       </Card>
@@ -112,7 +114,7 @@ export function PatientList() {
                         {patient.name || patient.fullName || 'Unknown Patient'}
                       </h3>
                       <p className="text-sm text-slate-600">
-                        {patient.age || 'N/A'} years • {patient.gender || 'N/A'}
+                        {patient.age || 'N/A'} {t('patients.years')} • {patient.gender || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -127,7 +129,7 @@ export function PatientList() {
                     </div>
                   </div>
                   <div className="text-xs text-slate-500">
-                    Last visit: {patient.lastVisit || new Date(patient.created_at || Date.now()).toLocaleDateString()}
+                    {t('patients.lastVisit')}: {patient.lastVisit || new Date(patient.created_at || Date.now()).toLocaleDateString()}
                   </div>
                 </div>
               </div>
@@ -139,7 +141,7 @@ export function PatientList() {
 
       {!loading && displayPatients.length === 0 && (
         <Card className="p-12 text-center">
-          <p className="text-slate-600">No patients found</p>
+          <p className="text-slate-600">{t('patients.noPatients')}</p>
         </Card>
       )}
 
@@ -152,17 +154,17 @@ export function PatientList() {
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
             >
-              Previous
+              {t('common.previous')}
             </Button>
             <span className="px-4 py-2 text-sm text-slate-600">
-              Page {currentPage} of {totalPages}
+              {t('patients.page')} {currentPage} {t('patients.of')} {totalPages}
             </span>
             <Button
               variant="outline"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
             >
-              Next
+              {t('common.next')}
             </Button>
           </div>
         </Card>

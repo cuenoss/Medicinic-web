@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   ArrowLeft,
@@ -14,6 +15,7 @@ import { Button } from '../ui/button';
 import { appointmentsService, Appointment } from '../../services/appointments';
 
 export function AppointmentSchedule() {
+  const { t } = useTranslation();
   const [showAddAppointmentModal, setShowAddAppointmentModal] = useState(false);
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +100,7 @@ export function AppointmentSchedule() {
         });
       } catch (error) {
         console.error('Failed to create appointment:', error);
-        alert('Failed to create appointment');
+        alert(t('appointments.createFailed'));
       }
     }
   };
@@ -109,7 +111,7 @@ export function AppointmentSchedule() {
       <Link to="/appointments">
         <Button variant="ghost" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Calendar
+          {t('appointments.backToCalendar')}
         </Button>
       </Link>
 
@@ -117,7 +119,7 @@ export function AppointmentSchedule() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-slate-800 mb-2">
-            Daily Schedule
+            {t('appointments.dailySchedule')}
           </h1>
           <div className="flex items-center gap-2 text-slate-600">
             <Calendar className="w-5 h-5" />
@@ -126,7 +128,7 @@ export function AppointmentSchedule() {
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowAddAppointmentModal(true)}>
           <Plus className="w-5 h-5 mr-2" />
-          Add Appointment
+          {t('appointments.addAppointment')}
         </Button>
       </div>
 
@@ -138,7 +140,7 @@ export function AppointmentSchedule() {
               <Calendar className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-600 mb-1">Today's Total Appointments</p>
+              <p className="text-sm text-slate-600 mb-1">{t('appointments.todayTotalAppointments')}</p>
               <p className="text-3xl font-semibold text-slate-800">
                 {todayAppointments.length}
               </p>
@@ -150,7 +152,7 @@ export function AppointmentSchedule() {
       {/* Timeline */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-6">
-          Today's Timeline
+          {t('appointments.todayTimeline')}
         </h3>
         <div className="space-y-4">
           {todayAppointments.map((appointment, index) => (
@@ -165,7 +167,7 @@ export function AppointmentSchedule() {
                   <p className="font-semibold text-slate-800">
                     {appointment.time}
                   </p>
-                  <p className="text-xs text-slate-500">Appointment</p>
+                  <p className="text-xs text-slate-500">{t('appointments.appointmentLabel')}</p>
                 </div>
               </div>
 
@@ -204,7 +206,7 @@ export function AppointmentSchedule() {
                     size="sm"
                     onClick={() => window.location.href = `/patients/${appointment.patient_id}`}
                   >
-                    View Details
+                    {t('appointments.viewDetails')}
                   </Button>
                 </div>
               </div>
@@ -220,7 +222,7 @@ export function AppointmentSchedule() {
           <Card className="w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-800">
-                Add Daily Appointment
+                {t('appointments.addDailyAppointment')}
               </h3>
               <Button
                 variant="ghost"
@@ -234,13 +236,13 @@ export function AppointmentSchedule() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Patient Name
+                  {t('appointments.patientName')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <User className="w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Enter patient name"
+                    placeholder={t('appointments.enterPatientName')}
                     value={newAppointment.patientName}
                     onChange={(e) =>
                       setNewAppointment({
@@ -255,7 +257,7 @@ export function AppointmentSchedule() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Phone Number
+                  {t('appointments.phoneNumber')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Phone className="w-4 h-4 text-slate-400" />
@@ -277,7 +279,7 @@ export function AppointmentSchedule() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Time
+                    {t('appointments.time')}
                   </label>
                   <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                     <Clock className="w-4 h-4 text-slate-400" />
@@ -297,7 +299,7 @@ export function AppointmentSchedule() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Type
+                    {t('appointments.type')}
                   </label>
                   <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                     <select
@@ -310,10 +312,10 @@ export function AppointmentSchedule() {
                       }
                       className="flex-1 outline-none text-slate-800 bg-transparent"
                     >
-                      <option value="Check-up">Check-up</option>
-                      <option value="Follow-up">Follow-up</option>
-                      <option value="Consultation">Consultation</option>
-                      <option value="Emergency">Emergency</option>
+                      <option value="Check-up">{t('appointments.types.Check-up')}</option>
+                      <option value="Follow-up">{t('appointments.types.Follow-up')}</option>
+                      <option value="Consultation">{t('appointments.types.Consultation')}</option>
+                      <option value="Emergency">{t('appointments.types.Emergency')}</option>
                     </select>
                   </div>
                 </div>
@@ -321,7 +323,7 @@ export function AppointmentSchedule() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Duration
+                  {t('appointments.duration')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <Clock className="w-4 h-4 text-slate-400" />
@@ -335,18 +337,18 @@ export function AppointmentSchedule() {
                     }
                     className="flex-1 outline-none text-slate-800 bg-transparent"
                   >
-                    <option value={15}>15 minutes</option>
-                    <option value={20}>20 minutes</option>
-                    <option value={30}>30 minutes</option>
-                    <option value={45}>45 minutes</option>
-                    <option value={60}>1 hour</option>
+                    <option value={15}>15 {t('appointments.minutes')}</option>
+                    <option value={20}>20 {t('appointments.minutes')}</option>
+                    <option value={30}>30 {t('appointments.minutes')}</option>
+                    <option value={45}>45 {t('appointments.minutes')}</option>
+                    <option value={60}>{t('appointments.oneHour')}</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Payment Amount (DA)
+                  {t('appointments.paymentAmount')}
                 </label>
                 <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
                   <span className="text-slate-400">DA</span>
@@ -374,14 +376,14 @@ export function AppointmentSchedule() {
                   onClick={() => setShowAddAppointmentModal(false)}
                   className="flex-1"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   onClick={handleAddAppointment}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   disabled={!newAppointment.patientName || !newAppointment.phone_number || !newAppointment.time}
                 >
-                  Add Appointment
+                  {t('appointments.addAppointment')}
                 </Button>
               </div>
             </div>
