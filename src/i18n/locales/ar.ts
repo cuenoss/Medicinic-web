@@ -8,6 +8,23 @@ export default {
     settings: 'الإعدادات',
     logout: 'تسجيل الخروج',
     managementSystem: 'نظام الإدارة',
+    admin: 'المسؤول',
+  },
+
+  // Admin
+  admin: {
+    title: 'الحسابات',
+    subtitle: 'جميع الحسابات المسجلة على المنصة',
+    totalAccounts: 'إجمالي الحسابات',
+    name: 'الاسم',
+    email: 'البريد الإلكتروني',
+    patients: 'المرضى',
+    joined: 'تاريخ الانضمام',
+    role: 'الدور',
+    roleAdmin: 'مسؤول',
+    roleDoctor: 'طبيب',
+    loading: 'جارٍ تحميل الحسابات...',
+    noAccounts: 'لا توجد حسابات',
   },
 
   // Auth

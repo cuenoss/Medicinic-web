@@ -7,6 +7,23 @@ export default {
     settings: 'Paramètres',
     logout: 'Déconnexion',
     managementSystem: 'Système de gestion',
+    admin: 'Admin',
+  },
+
+  // Admin
+  admin: {
+    title: 'Comptes',
+    subtitle: 'Tous les comptes enregistrés sur la plateforme',
+    totalAccounts: 'comptes au total',
+    name: 'Nom',
+    email: 'Email',
+    patients: 'Patients',
+    joined: 'Inscrit le',
+    role: 'Rôle',
+    roleAdmin: 'Admin',
+    roleDoctor: 'Médecin',
+    loading: 'Chargement des comptes...',
+    noAccounts: 'Aucun compte trouvé',
   },
   auth: {
     login: 'Connexion',
