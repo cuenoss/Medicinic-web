@@ -141,6 +141,11 @@ export class ApiClient {
     });
   }
 
+  // Admin endpoints
+  async getAdminDoctors() {
+    return this.request('/api/admin/doctors');
+  }
+
   // Health check
   async healthCheck() {
     return this.request('/api/health');

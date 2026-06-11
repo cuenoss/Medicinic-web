@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   Globe,
+  Shield,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useState } from 'react';
@@ -47,6 +48,8 @@ export function MainLayout() {
     { name: t('nav.appointments'), href: '/appointments', icon: Calendar },
     { name: t('nav.finance'), href: '/finance', icon: DollarSign },
     { name: t('nav.settings'), href: '/settings', icon: Settings },
+    // Admin link only appears for admin accounts
+    ...(user?.is_admin ? [{ name: t('nav.admin'), href: '/admin', icon: Shield }] : []),
   ];
 
   const isActive = (href: string) => {

@@ -13,6 +13,7 @@ import { AppointmentCalendar } from "./components/appointments/AppointmentCalend
 import { AppointmentSchedule } from "./components/appointments/AppointmentSchedule";
 import { Settings } from "./components/settings/Settings";
 import { Finance } from "./components/finance/Finance";
+import { AdminPanel } from "./components/admin/AdminPanel";
 
 export const router = createHashRouter([
   {
@@ -93,6 +94,14 @@ export const router = createHashRouter([
         element: (
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin",
+        element: (
+          <ProtectedRoute>
+            <AdminPanel />
           </ProtectedRoute>
         ),
       },

@@ -17,6 +17,14 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+# Admin accounts — emails listed in the ADMIN_EMAILS env var (comma-separated)
+ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
+
+
+def is_admin_email(email: str) -> bool:
+    """True if the given email is configured as an admin in ADMIN_EMAILS."""
+    return bool(email) and email.lower() in ADMIN_EMAILS
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
@@ -93,11 +101,14 @@ async def login_doctor(db: AsyncSession, doctor_data: DoctorLogin) -> TokenRespo
     # Update last login
     doctor.updated_at = datetime.utcnow()
     await db.commit()
-    
+
+    doctor_response = DoctorResponse.from_orm(doctor)
+    doctor_response.is_admin = is_admin_email(doctor.email)
+
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        doctor=DoctorResponse.from_orm(doctor)
+        doctor=doctor_response
     )
 
 async def forgot_password(db: AsyncSession, email: str) -> dict:
@@ -189,5 +200,17 @@ async def get_current_doctor(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Doctor not found"
         )
-    
+
     return doctor
+
+
+async def get_current_admin(
+    current_doctor: Doctor = Depends(get_current_doctor)
+) -> Doctor:
+    """Like get_current_doctor, but also requires the account to be an admin."""
+    if not is_admin_email(current_doctor.email):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_doctor

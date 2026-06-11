@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.modules.auth.service import get_current_doctor
+from app.modules.auth.service import get_current_doctor, get_current_admin
 
 # Import all module routers
 from app.modules.auth.router import router as auth_router
@@ -10,6 +10,7 @@ from app.modules.ordonnances.router import router as ordonnances_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.finance.router import router as finance_router
 from app.modules.settings.router import router as settings_router
+from app.modules.admin.router import router as admin_router
 
 api_router = APIRouter()
 
@@ -25,6 +26,12 @@ api_router.include_router(ordonnances_router, prefix="/ordonnances", tags=["ordo
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"], **protected)
 api_router.include_router(finance_router, prefix="/finance", tags=["finance"], **protected)
 api_router.include_router(settings_router, prefix="/settings", tags=["settings"], **protected)
+
+# Admin routes — require a valid token AND an admin email (ADMIN_EMAILS)
+api_router.include_router(
+    admin_router, prefix="/admin", tags=["admin"],
+    dependencies=[Depends(get_current_admin)],
+)
 
 @api_router.get("/health")
 async def health_check():

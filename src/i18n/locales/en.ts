@@ -7,6 +7,23 @@ export default {
     settings: 'Settings',
     logout: 'Logout',
     managementSystem: 'Management System',
+    admin: 'Admin',
+  },
+
+  // Admin
+  admin: {
+    title: 'Accounts',
+    subtitle: 'All accounts registered on the platform',
+    totalAccounts: 'total accounts',
+    name: 'Name',
+    email: 'Email',
+    patients: 'Patients',
+    joined: 'Joined',
+    role: 'Role',
+    roleAdmin: 'Admin',
+    roleDoctor: 'Doctor',
+    loading: 'Loading accounts...',
+    noAccounts: 'No accounts found',
   },
   auth: {
     login: 'Login',
