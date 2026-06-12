@@ -11,7 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<{ requiresOTP: boolean; email?: string }>;
+  login: (email: string, password: string) => Promise<void>;
   register: (userData: {
     fullName: string;
     email: string;
@@ -20,7 +20,6 @@ interface AuthContextType {
     confirmPassword: string;
   }) => Promise<{ email: string }>;
   verifyEmail: (email: string, code: string) => Promise<void>;
-  verifyLogin: (email: string, code: string) => Promise<void>;
   resendVerification: (email: string) => Promise<any>;
   logout: () => void;
   isLoading: boolean;
@@ -58,21 +57,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ requiresOTP: boolean; email?: string }> => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.login(email, password) as any;
-      // New flow: login returns OTP challenge
-      if (response.status === 'code_sent') {
-        return { requiresOTP: true, email: response.email };
-      }
-      // Legacy / fallback: direct token
+      const response = await api.login(email, password) as {
+        access_token: string;
+        token_type: string;
+        doctor: User;
+      };
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.doctor));
       setToken(response.access_token);
       setUser(response.doctor);
-      return { requiresOTP: false };
     } catch (err: any) {
       setError(err.message || 'Login failed');
       throw err;
@@ -127,27 +124,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const verifyLogin = async (email: string, code: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await api.verifyLogin(email, code) as {
-        access_token: string;
-        token_type: string;
-        doctor: User;
-      };
-      localStorage.setItem('access_token', response.access_token);
-      localStorage.setItem('user', JSON.stringify(response.doctor));
-      setToken(response.access_token);
-      setUser(response.doctor);
-    } catch (err: any) {
-      setError(err.message || 'Invalid code');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
@@ -157,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value: AuthContextType = {
-    user, token, login, register, verifyEmail, verifyLogin, resendVerification, logout, isLoading, error,
+    user, token, login, register, verifyEmail, resendVerification, logout, isLoading, error,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

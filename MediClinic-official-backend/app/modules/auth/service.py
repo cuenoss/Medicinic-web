@@ -167,7 +167,7 @@ async def resend_verification_code(db: AsyncSession, email: str) -> dict:
     return {"message": "A new verification code has been sent to your email."}
 
 
-async def login_doctor(db: AsyncSession, doctor_data: DoctorLogin) -> dict:
+async def login_doctor(db: AsyncSession, doctor_data: DoctorLogin) -> TokenResponse:
     doctor = await get_doctor_by_email(db, doctor_data.email)
     if not doctor:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
@@ -181,16 +181,18 @@ async def login_doctor(db: AsyncSession, doctor_data: DoctorLogin) -> dict:
             detail="Email not verified. Please check your inbox for the verification code.",
         )
 
-    code = generate_verification_code()
-    now = datetime.utcnow()
-    doctor.verification_code = code
-    doctor.verification_code_expires_at = now + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)
-    doctor.updated_at = now
+    access_token = create_access_token(
+        data={"sub": doctor.email, "doctor_id": doctor.id},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+
+    doctor.updated_at = datetime.utcnow()
     await db.commit()
 
-    await send_verification_email(doctor.email, doctor.fullName, code)
+    doctor_response = DoctorResponse.from_orm(doctor)
+    doctor_response.is_admin = is_admin_email(doctor.email)
 
-    return {"status": "code_sent", "email": doctor.email}
+    return TokenResponse(access_token=access_token, token_type="bearer", doctor=doctor_response)
 
 
 async def verify_login_code(db: AsyncSession, email: str, code: str) -> TokenResponse:

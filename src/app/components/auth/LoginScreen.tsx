@@ -18,12 +18,8 @@ export function LoginScreen() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await login(formData.email, formData.password);
-      if (result.requiresOTP) {
-        navigate('/auth/verify-login', { state: { email: result.email } });
-      } else {
-        navigate('/');
-      }
+      await login(formData.email, formData.password);
+      navigate('/');
     } catch (error: any) {
       if (error?.status === 403) {
         navigate('/auth/verify-email', { state: { email: formData.email } });

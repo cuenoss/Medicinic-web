@@ -4,7 +4,6 @@ import { AuthLayout } from "./components/layouts/AuthLayout";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { RegisterScreen } from "./components/auth/RegisterScreen";
 import { VerifyEmailScreen } from "./components/auth/VerifyEmailScreen";
-import { LoginVerifyScreen } from "./components/auth/LoginVerifyScreen";
 import { PasswordResetScreen } from "./components/auth/PasswordResetScreen";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
@@ -26,7 +25,6 @@ export const router = createHashRouter([
       { path: "login", Component: LoginScreen },
       { path: "register", Component: RegisterScreen },
       { path: "verify-email", Component: VerifyEmailScreen },
-        { path: "verify-login", Component: LoginVerifyScreen },
       { path: "reset-password", Component: PasswordResetScreen },
     ],
   },
