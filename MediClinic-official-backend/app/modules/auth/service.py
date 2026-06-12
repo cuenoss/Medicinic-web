@@ -1,28 +1,36 @@
-
-from sqlalchemy.ext.asyncio import AsyncSession
+import os
+import random
+import string
+import resend
+from datetime import datetime, timedelta
 from typing import Optional
-from sqlalchemy import select
-from .models import Doctor
-from app.db import get_db
+
 from fastapi import Depends, HTTPException, status
-from .schemas import DoctorCreate, DoctorLogin, DoctorResponse, TokenResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
-from fastapi import HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import os
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from .models import Doctor
+from .schemas import DoctorCreate, DoctorLogin, DoctorResponse, TokenResponse
+from app.db import get_db
+
+# ── Config ───────────────────────────────────────────────────────────────────
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+VERIFICATION_CODE_EXPIRE_MINUTES = 15
 
-# Admin accounts — emails listed in the ADMIN_EMAILS env var (comma-separated)
 ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "MediClinic <noreply@mediclinic.app>")
 
+resend.api_key = RESEND_API_KEY
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 def is_admin_email(email: str) -> bool:
-    """True if the given email is configured as an admin in ADMIN_EMAILS."""
     return bool(email) and email.lower() in ADMIN_EMAILS
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -36,181 +44,203 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def generate_verification_code(length: int = 6) -> str:
+    return "".join(random.choices(string.digits, k=length))
 
 async def get_doctor_by_email(db: AsyncSession, email: str) -> Optional[Doctor]:
     result = await db.execute(select(Doctor).where(Doctor.email == email))
     return result.scalars().first()
 
-async def register_doctor(db: AsyncSession, doctor_data: DoctorCreate) -> DoctorResponse:
-    # Check if doctor already exists
-    existing_doctor = await get_doctor_by_email(db, doctor_data.email)
-    if existing_doctor:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Hash password and create doctor
-    hashed_password = hash_password(doctor_data.password)
-    current_time = datetime.utcnow()
-    
+# ── Email sending ─────────────────────────────────────────────────────────────
+async def send_verification_email(email: str, full_name: str, code: str) -> None:
+    """Send a 6-digit verification code via Resend."""
+    if not RESEND_API_KEY:
+        print(f"[DEV] Verification code for {email}: {code}")
+        return
+
+    params: resend.Emails.SendParams = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [email],
+        "subject": "Your MediClinic Verification Code",
+        "html": f"""
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+          <h2 style="color:#1d4ed8;">Verify your email</h2>
+          <p>Hi {full_name},</p>
+          <p>Use the code below to verify your MediClinic account.
+             It expires in <strong>{VERIFICATION_CODE_EXPIRE_MINUTES} minutes</strong>.</p>
+          <div style="font-size:36px;font-weight:bold;letter-spacing:8px;
+                      background:#eff6ff;border-radius:8px;padding:20px;
+                      text-align:center;color:#1d4ed8;margin:24px 0;">
+            {code}
+          </div>
+          <p style="color:#64748b;font-size:14px;">
+            If you didn't create a MediClinic account, you can safely ignore this email.
+          </p>
+        </div>
+        """,
+    }
+    resend.Emails.send(params)
+
+# ── Auth functions ────────────────────────────────────────────────────────────
+async def register_doctor(db: AsyncSession, doctor_data: DoctorCreate) -> dict:
+    existing = await get_doctor_by_email(db, doctor_data.email)
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+
+    code = generate_verification_code()
+    now = datetime.utcnow()
+
     doctor = Doctor(
         fullName=doctor_data.fullName,
         email=doctor_data.email,
-        hashed_password=hashed_password,
-        created_at=current_time,
-        updated_at=current_time
+        hashed_password=hash_password(doctor_data.password),
+        created_at=now,
+        updated_at=now,
+        is_verified=False,
+        verification_code=code,
+        verification_code_expires_at=now + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES),
     )
-    
     db.add(doctor)
     await db.commit()
     await db.refresh(doctor)
-    
-    return DoctorResponse.from_orm(doctor)
+
+    await send_verification_email(doctor.email, doctor.fullName, code)
+
+    return {
+        "message": "Registration successful. Please check your email for the verification code.",
+        "email": doctor.email,
+    }
+
+
+async def verify_email_code(db: AsyncSession, email: str, code: str) -> dict:
+    doctor = await get_doctor_by_email(db, email)
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+
+    if doctor.is_verified:
+        return {"message": "Email already verified"}
+
+    if not doctor.verification_code or doctor.verification_code != code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification code")
+
+    if not doctor.verification_code_expires_at or datetime.utcnow() > doctor.verification_code_expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification code has expired. Please request a new one.",
+        )
+
+    doctor.is_verified = True
+    doctor.verification_code = None
+    doctor.verification_code_expires_at = None
+    doctor.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return {"message": "Email verified successfully. You can now log in."}
+
+
+async def resend_verification_code(db: AsyncSession, email: str) -> dict:
+    doctor = await get_doctor_by_email(db, email)
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+
+    if doctor.is_verified:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is already verified")
+
+    code = generate_verification_code()
+    doctor.verification_code = code
+    doctor.verification_code_expires_at = datetime.utcnow() + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)
+    doctor.updated_at = datetime.utcnow()
+    await db.commit()
+
+    await send_verification_email(doctor.email, doctor.fullName, code)
+    return {"message": "A new verification code has been sent to your email."}
+
 
 async def login_doctor(db: AsyncSession, doctor_data: DoctorLogin) -> TokenResponse:
-    # Find doctor by email
     doctor = await get_doctor_by_email(db, doctor_data.email)
     if not doctor:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
-    
-    # Verify password
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+
     if not verify_password(doctor_data.password, doctor.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+
+    if not doctor.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please check your inbox for the verification code.",
         )
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
     access_token = create_access_token(
         data={"sub": doctor.email, "doctor_id": doctor.id},
-        expires_delta=access_token_expires
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    
-    # Update last login
+
     doctor.updated_at = datetime.utcnow()
     await db.commit()
 
     doctor_response = DoctorResponse.from_orm(doctor)
     doctor_response.is_admin = is_admin_email(doctor.email)
 
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        doctor=doctor_response
-    )
+    return TokenResponse(access_token=access_token, token_type="bearer", doctor=doctor_response)
+
 
 async def forgot_password(db: AsyncSession, email: str) -> dict:
-    # Find doctor by email
     doctor = await get_doctor_by_email(db, email)
     if not doctor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No account found with this email"
-        )
-    
-    # Create reset token (shorter expiry)
-    reset_token_expires = timedelta(minutes=15)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No account found with this email")
+
     reset_token = create_access_token(
         data={"sub": doctor.email, "type": "password_reset"},
-        expires_delta=reset_token_expires
+        expires_delta=timedelta(minutes=15),
     )
-    
-    # TODO: Send email with reset token
-    # For now, just return success message
-    return {
-        "message": "Password reset link has been sent to your email",
-        "reset_token": reset_token  # In production, don't return token, send via email
-    }
+    return {"message": "Password reset link has been sent to your email", "reset_token": reset_token}
+
 
 async def reset_password(db: AsyncSession, token: str, new_password: str) -> dict:
     try:
-        # Decode token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
         token_type = payload.get("type")
-        
         if email is None or token_type != "password_reset":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reset token"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token")
     except jwt.PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid reset token"
-        )
-    
-    # Find doctor
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token")
+
     doctor = await get_doctor_by_email(db, email)
     if not doctor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No account found with this email"
-        )
-    
-    # Update password
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No account found with this email")
+
     doctor.hashed_password = hash_password(new_password)
     doctor.updated_at = datetime.utcnow()
     await db.commit()
-    
+
     return {"message": "Password reset successful"}
+
 
 async def get_current_doctor(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> Doctor:
-    if not db:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database session not provided"
-        )
-    
     try:
-        # Decode token
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
-        
         if email is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
     except jwt.PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials"
-        )
-    
-    # Get doctor
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
+
     doctor = await get_doctor_by_email(db, email)
     if doctor is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Doctor not found"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Doctor not found")
 
     return doctor
 
 
-async def get_current_admin(
-    current_doctor: Doctor = Depends(get_current_doctor)
-) -> Doctor:
-    """Like get_current_doctor, but also requires the account to be an admin."""
+async def get_current_admin(current_doctor: Doctor = Depends(get_current_doctor)) -> Doctor:
     if not is_admin_email(current_doctor.email):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return current_doctor

@@ -86,6 +86,20 @@ export class ApiClient {
     });
   }
 
+  async verifyEmail(email: string, code: string) {
+    return this.request('/api/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+  }
+
+  async resendVerification(email: string) {
+    return this.request('/api/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
   async forgotPassword(email: string) {
     return this.request('/api/auth/forgot-password', {
       method: 'POST',
@@ -135,22 +149,4 @@ export class ApiClient {
     });
   }
 
-  async deletePatient(id: number) {
-    return this.request(`/api/patients/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Admin endpoints
-  async getAdminDoctors() {
-    return this.request('/api/admin/doctors');
-  }
-
-  // Health check
-  async healthCheck() {
-    return this.request('/api/health');
-  }
-}
-
-// Create singleton instance
-export const api = new ApiClient();
+  async deletePat

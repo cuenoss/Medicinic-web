@@ -3,6 +3,7 @@ import { MainLayout } from "./components/layouts/MainLayout";
 import { AuthLayout } from "./components/layouts/AuthLayout";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { RegisterScreen } from "./components/auth/RegisterScreen";
+import { VerifyEmailScreen } from "./components/auth/VerifyEmailScreen";
 import { PasswordResetScreen } from "./components/auth/PasswordResetScreen";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
@@ -23,6 +24,7 @@ export const router = createHashRouter([
     children: [
       { path: "login", Component: LoginScreen },
       { path: "register", Component: RegisterScreen },
+      { path: "verify-email", Component: VerifyEmailScreen },
       { path: "reset-password", Component: PasswordResetScreen },
     ],
   },
@@ -99,13 +101,4 @@ export const router = createHashRouter([
         ),
       },
       {
-        path: "admin",
-        element: (
-          <AdminRoute>
-            <AdminPanel />
-          </AdminRoute>
-        ),
-      },
-    ],
-  },
-]);
+        path: "ad

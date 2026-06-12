@@ -18,7 +18,9 @@ interface AuthContextType {
     phone: string;
     password: string;
     confirmPassword: string;
-  }) => Promise<void>;
+  }) => Promise<string>;
+  verifyEmail: (email: string, code: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   error: string | null;
@@ -32,56 +34,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for existing token on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
     const storedUser = localStorage.getItem('user');
 
     if (storedToken && storedUser) {
       try {
-        // Decode JWT and check expiry without a network call
         const payload = JSON.parse(atob(storedToken.split('.')[1]));
         const isExpired = payload.exp * 1000 < Date.now();
-
         if (isExpired) {
-          // Token expired — clear and redirect to login
           localStorage.removeItem('access_token');
           localStorage.removeItem('user');
         } else {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
+          setUser(JSON.parse(storedUser));
           setToken(storedToken);
         }
-      } catch (error) {
-        // Invalid token format — clear it
+      } catch {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
       }
     }
-
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
-    
     try {
       const response = await api.login(email, password) as {
         access_token: string;
         token_type: string;
         doctor: User;
       };
-      
-      // Store token and user data
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.doctor));
-      
       setToken(response.access_token);
       setUser(response.doctor);
-    } catch (error: any) {
-      setError(error.message || 'Login failed');
-      throw error;
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -93,17 +84,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phone: string;
     password: string;
     confirmPassword: string;
-  }) => {
+  }): Promise<string> => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      await api.register(userData);
-      // Registration successful, but user needs to login
-      setError(null);
-    } catch (error: any) {
-      setError(error.message || 'Registration failed');
-      throw error;
+      const response = await api.register(userData) as { email: string; message: string };
+      return response.email;
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyEmail = async (email: string, code: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.verifyEmail(email, code);
+    } catch (err: any) {
+      setError(err.message || 'Verification failed');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendVerification = async (email: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.resendVerification(email);
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend code');
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -118,20 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value: AuthContextType = {
-    user,
-    token,
-    login,
-    register,
-    logout,
-    isLoading,
-    error,
+    user, token, login, register, verifyEmail, resendVerification, logout, isLoading, error,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

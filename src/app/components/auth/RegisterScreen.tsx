@@ -24,8 +24,9 @@ export function RegisterScreen() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await register(formData);
-      navigate('/auth/login');
+      const email = await register(formData);
+      // Redirect to email verification screen, passing the email along
+      navigate('/auth/verify-email', { state: { email } });
     } catch (error) {
       console.error('Registration failed:', error);
     }
@@ -156,10 +157,4 @@ export function RegisterScreen() {
 
       <div className="mt-6 text-center text-sm">
         <span className="text-slate-600">{t('auth.hasAccount')} </span>
-        <Link to="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium">
-          {t('auth.signIn')}
-        </Link>
-      </div>
-    </Card>
-  );
-}
+        <Link to="/auth/login" className="text-blue-
