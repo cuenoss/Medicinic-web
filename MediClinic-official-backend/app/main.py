@@ -207,6 +207,7 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 print(f"Error checking/adding doctor_id columns: {e}")
 
+
         # Add email verification columns to doctors table if they don't exist
         async with engine.begin() as conn:
             try:
@@ -215,13 +216,15 @@ async def lifespan(app: FastAPI):
                     ("verification_code", "VARCHAR"),
                     ("verification_code_expires_at", "TIMESTAMP"),
                 ]:
-                    result = await conn.execute(text(f"""
-                        SELECT column_name FROM information_schema.columns
-                        WHERE table_name = 'doctors' AND column_name = '{col_name}'
-                    """))
+                    result = await conn.execute(text(
+                        "SELECT column_name FROM information_schema.columns "
+                        f"WHERE table_name = 'doctors' AND column_name = '{col_name}'"
+                    ))
                     if not result.fetchone():
                         print(f"Adding {col_name} column to doctors table...")
-                        await conn.execute(text(f"ALTER TABLE doctors ADD COLUMN {col_name} {col_def}"))
+                        await conn.execute(text(
+                            f"ALTER TABLE doctors ADD COLUMN {col_name} {col_def}"
+                        ))
                         print(f"Successfully added {col_name}")
                     else:
                         print(f"{col_name} column already exists in doctors table")
@@ -332,4 +335,36 @@ async def fix_consultations_table():
                     
                     -- Family Medical History
                     family_history TEXT,
-          
+                    
+                    -- Consultation Details
+                    diagnosis TEXT,
+                    date TIMESTAMP NOT NULL,
+                    doctor VARCHAR(255) NOT NULL,
+                    
+                    -- Timestamps
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE
+                );
+            """))
+            
+            # Create indexes
+            await conn.execute(text("""
+                CREATE INDEX idx_consultations_patient_id ON consultations(patient_id);
+                CREATE INDEX idx_consultations_date ON consultations(date);
+                CREATE INDEX idx_consultations_doctor ON consultations(doctor);
+            """))
+            
+        return {"message": "Consultations table fixed successfully!"}
+        
+    except Exception as e:
+        return {"error": f"Failed to fix consultations table: {str(e)}"}
+
+@app.get("/")
+async def root():
+    return {
+        "message": "MediClinic backend is running",
+        "api_prefix": "/api",
+        "docs": "/docs",
+        "openapi": "/openapi.json",
+    }
+
