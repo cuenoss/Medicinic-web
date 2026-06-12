@@ -102,6 +102,20 @@ export class ApiClient {
     });
   }
 
+  async verifyLogin(email: string, code: string) {
+    return this.request('/api/auth/verify-login', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+  }
+
+  async resendLoginCode(email: string) {
+    return this.request('/api/auth/resend-login-code', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
   async forgotPassword(email: string) {
     return this.request('/api/auth/forgot-password', {
       method: 'POST',

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .models import Doctor
 from .service import (
     register_doctor, login_doctor, forgot_password, reset_password,
-    verify_email_code, resend_verification_code, get_current_doctor,
+    verify_email_code, resend_verification_code, verify_login_code, resend_login_code, get_current_doctor,
 )
 from .schemas import (
     DoctorCreate, DoctorLogin, DoctorResponse, TokenResponse,
@@ -56,7 +56,7 @@ async def resend_verification(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Resend failed: {str(e)}")
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 async def login(
     doctor_data: DoctorLogin,
     db: AsyncSession = Depends(get_db),
@@ -67,6 +67,34 @@ async def login(
         raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Login failed. Please try again.")
+
+
+@router.post("/verify-login")
+async def verify_login(
+    body: VerifyEmailRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Verify login OTP code and return JWT token."""
+    try:
+        return await verify_login_code(db, body.email, body.code)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("/resend-login-code")
+async def resend_login(
+    body: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Resend login OTP code."""
+    try:
+        return await resend_login_code(db, body.email)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post("/forgot-password")

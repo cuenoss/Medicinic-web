@@ -11,7 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ requiresOTP: boolean; email?: string; debugCode?: string }>;
   register: (userData: {
     fullName: string;
     email: string;
@@ -57,19 +57,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<{ requiresOTP: boolean; email?: string; debugCode?: string }> => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.login(email, password) as {
-        access_token: string;
-        token_type: string;
-        doctor: User;
-      };
+      const response = await api.login(email, password) as any;
+      // New flow: login returns OTP challenge
+      if (response.status === 'code_sent') {
+        return { requiresOTP: true, email: response.email, debugCode: response.debug_code };
+      }
+      // Legacy / fallback: direct token
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.doctor));
       setToken(response.access_token);
       setUser(response.doctor);
+      return { requiresOTP: false };
     } catch (err: any) {
       setError(err.message || 'Login failed');
       throw err;
