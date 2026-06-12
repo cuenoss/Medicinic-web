@@ -234,48 +234,6 @@ async def resend_login_code(db: AsyncSession, email: str) -> dict:
     return {"message": "A new login code has been sent to your email."}
 
 
-async def verify_login_code(db: AsyncSession, email: str, code: str) -> TokenResponse:
-    doctor = await get_doctor_by_email(db, email)
-    if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
-
-    if not doctor.verification_code or doctor.verification_code != code:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid code")
-
-    if not doctor.verification_code_expires_at or datetime.utcnow() > doctor.verification_code_expires_at:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Code expired. Please log in again.")
-
-    doctor.verification_code = None
-    doctor.verification_code_expires_at = None
-    doctor.updated_at = datetime.utcnow()
-    await db.commit()
-
-    access_token = create_access_token(
-        data={"sub": doctor.email, "doctor_id": doctor.id},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-
-    doctor_response = DoctorResponse.from_orm(doctor)
-    doctor_response.is_admin = is_admin_email(doctor.email)
-
-    return TokenResponse(access_token=access_token, token_type="bearer", doctor=doctor_response)
-
-
-async def resend_login_code(db: AsyncSession, email: str) -> dict:
-    doctor = await get_doctor_by_email(db, email)
-    if not doctor or not doctor.is_verified:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
-
-    code = generate_verification_code()
-    doctor.verification_code = code
-    doctor.verification_code_expires_at = datetime.utcnow() + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)
-    doctor.updated_at = datetime.utcnow()
-    await db.commit()
-
-    await send_verification_email(doctor.email, doctor.fullName, code)
-    return {"message": "A new login code has been sent to your email."}
-
-
 async def forgot_password(db: AsyncSession, email: str) -> dict:
     doctor = await get_doctor_by_email(db, email)
     if not doctor:
