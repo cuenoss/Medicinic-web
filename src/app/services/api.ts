@@ -194,6 +194,10 @@ export class ApiClient {
     return this.request(`/api/admin/doctors/${id}`, { method: 'DELETE' });
   }
 
+  async forceVerifyDoctor(id: number) {
+    return this.request(`/api/admin/doctors/${id}/verify`, { method: 'POST' });
+  }
+
   // Health check
   async healthCheck() {
     return this.request('/api/health');

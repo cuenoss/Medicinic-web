@@ -12,6 +12,7 @@ interface AdminDoctor {
   is_admin: boolean;
   created_at: string | null;
   patient_count: number;
+  is_verified: boolean;
 }
 
 export function AdminPanel() {
@@ -20,6 +21,7 @@ export function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [verifyingId, setVerifyingId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -36,6 +38,18 @@ export function AdminPanel() {
     };
     fetchDoctors();
   }, []);
+
+  const handleVerify = async (id: number) => {
+    setVerifyingId(id);
+    try {
+      await api.forceVerifyDoctor(id);
+      setDoctors(prev => prev.map(d => d.id === id ? { ...d, is_verified: true } : d));
+    } catch (error) {
+      console.error('Failed to verify account:', error);
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
   const handleDelete = async (id: number) => {
     setDeletingId(id);
@@ -112,8 +126,18 @@ export function AdminPanel() {
                   {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : '—'}
                 </div>
 
-                {/* Delete */}
-                <div className="md:col-span-1 flex justify-end">
+                {/* Actions */}
+                <div className="md:col-span-1 flex justify-end items-center gap-1">
+                  {!doc.is_verified && !doc.is_admin && (
+                    <button
+                      onClick={() => handleVerify(doc.id)}
+                      disabled={verifyingId === doc.id}
+                      title="Force verify email"
+                      className="p-1.5 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors text-xs font-medium disabled:opacity-50"
+                    >
+                      {verifyingId === doc.id ? '…' : '✓'}
+                    </button>
+                  )}
                   {confirmId === doc.id ? (
                     <div className="flex items-center gap-1">
                       <button

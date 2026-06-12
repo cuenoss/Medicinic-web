@@ -50,3 +50,17 @@ async def delete_doctor(doctor_id: int, db: AsyncSession = Depends(get_db)) -> D
     await db.delete(doctor)
     await db.commit()
     return {"message": f"Account {doctor.email} deleted successfully"}
+
+
+@router.post("/doctors/{doctor_id}/verify")
+async def force_verify_doctor(doctor_id: int, db: AsyncSession = Depends(get_db)) -> Dict[str, str]:
+    """Manually mark a doctor's email as verified (admin use)."""
+    result = await db.execute(select(Doctor).where(Doctor.id == doctor_id))
+    doctor = result.scalars().first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    doctor.is_verified = True
+    doctor.verification_code = None
+    doctor.verification_code_expires_at = None
+    await db.commit()
+    return {"message": f"{doctor.email} has been manually verified"}
