@@ -74,7 +74,8 @@ export function VerifyEmailScreen() {
   async function handleResend() {
     if (cooldown > 0 || !email) return;
     try {
-      const res = await resendVerification(email) as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res: any = await resendVerification(email);
       if (res?.debug_code) {
         setDebugCode(res.debug_code);
         setDigits(res.debug_code.slice(0, CODE_LENGTH).split(''));

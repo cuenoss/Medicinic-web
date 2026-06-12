@@ -20,7 +20,7 @@ interface AuthContextType {
     confirmPassword: string;
   }) => Promise<{ email: string; debugCode?: string }>;
   verifyEmail: (email: string, code: string) => Promise<void>;
-  resendVerification: (email: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<any>;
   logout: () => void;
   isLoading: boolean;
   error: string | null;
