@@ -120,7 +120,6 @@ async def register_doctor(db: AsyncSession, doctor_data: DoctorCreate) -> dict:
     return {
         "message": "Registration successful. Please check your email for the verification code.",
         "email": doctor.email,
-        "debug_code": code,  # TODO: remove before go-live
     }
 
 
@@ -165,7 +164,7 @@ async def resend_verification_code(db: AsyncSession, email: str) -> dict:
     await db.commit()
 
     await send_verification_email(doctor.email, doctor.fullName, code)
-    return {"message": "A new verification code has been sent to your email.", "debug_code": code}
+    return {"message": "A new verification code has been sent to your email."}
 
 
 async def login_doctor(db: AsyncSession, doctor_data: DoctorLogin) -> dict:
@@ -191,7 +190,7 @@ async def login_doctor(db: AsyncSession, doctor_data: DoctorLogin) -> dict:
 
     await send_verification_email(doctor.email, doctor.fullName, code)
 
-    return {"status": "code_sent", "email": doctor.email, "debug_code": code}
+    return {"status": "code_sent", "email": doctor.email}
 
 
 async def verify_login_code(db: AsyncSession, email: str, code: str) -> TokenResponse:
@@ -233,7 +232,7 @@ async def resend_login_code(db: AsyncSession, email: str) -> dict:
     await db.commit()
 
     await send_verification_email(doctor.email, doctor.fullName, code)
-    return {"message": "A new login code has been sent to your email.", "debug_code": code}
+    return {"message": "A new login code has been sent to your email."}
 
 
 async def forgot_password(db: AsyncSession, email: str) -> dict:

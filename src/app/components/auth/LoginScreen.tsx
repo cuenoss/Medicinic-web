@@ -20,7 +20,7 @@ export function LoginScreen() {
     try {
       const result = await login(formData.email, formData.password);
       if (result.requiresOTP) {
-        navigate('/auth/verify-login', { state: { email: result.email, debugCode: result.debugCode } });
+        navigate('/auth/verify-login', { state: { email: result.email } });
       } else {
         navigate('/');
       }

@@ -14,10 +14,7 @@ export function VerifyEmailScreen() {
   const { verifyEmail, resendVerification, isLoading, error } = useAuth();
 
   const [email, setEmail] = useState<string>((location.state as any)?.email ?? '');
-  const [debugCode, setDebugCode] = useState<string>((location.state as any)?.debugCode ?? '');
-  const [digits, setDigits] = useState<string[]>(
-    debugCode ? debugCode.slice(0, CODE_LENGTH).split('') : Array(CODE_LENGTH).fill('')
-  );
+  const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [success, setSuccess] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
@@ -75,14 +72,8 @@ export function VerifyEmailScreen() {
     if (cooldown > 0 || !email) return;
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res: any = await resendVerification(email);
-      if (res?.debug_code) {
-        setDebugCode(res.debug_code);
-        setDigits(res.debug_code.slice(0, CODE_LENGTH).split(''));
-      } else {
-        setDigits(Array(CODE_LENGTH).fill(''));
-        inputRefs.current[0]?.focus();
-      }
+      setDigits(Array(CODE_LENGTH).fill(''));
+      inputRefs.current[0]?.focus();
       setCooldown(RESEND_COOLDOWN);
     } catch {
       // error shown via AuthContext
@@ -107,13 +98,6 @@ export function VerifyEmailScreen() {
           }. Enter it below to verify your account.
         </p>
       </div>
-
-      {debugCode && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-yellow-800 text-sm text-center">
-          <strong>Dev mode</strong> — email not yet configured.<br />
-          Your code: <span className="font-mono font-bold tracking-widest">{debugCode}</span>
-        </div>
-      )}
 
       {success ? (
         <div className="flex flex-col items-center gap-3 py-4">

@@ -25,7 +25,7 @@ export function RegisterScreen() {
     e.preventDefault();
     try {
       const result = await register(formData);
-      navigate('/auth/verify-email', { state: { email: result.email, debugCode: result.debugCode } });
+      navigate('/auth/verify-email', { state: { email: result.email } });
     } catch (error) {
       console.error('Registration failed:', error);
     }

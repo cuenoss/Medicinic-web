@@ -13,12 +13,7 @@ export function LoginVerifyScreen() {
   const location = useLocation();
 
   const email: string = (location.state as any)?.email ?? '';
-  const initialCode: string = (location.state as any)?.debugCode ?? '';
-
-  const [digits, setDigits] = useState<string[]>(
-    initialCode ? initialCode.slice(0, CODE_LENGTH).split('') : Array(CODE_LENGTH).fill('')
-  );
-  const [debugCode, setDebugCode] = useState<string>(initialCode);
+  const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [success, setSuccess] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,13 +75,8 @@ export function LoginVerifyScreen() {
     setError(null);
     try {
       const res: any = await api.resendLoginCode(email);
-      if (res?.debug_code) {
-        setDebugCode(res.debug_code);
-        setDigits(res.debug_code.slice(0, CODE_LENGTH).split(''));
-      } else {
-        setDigits(Array(CODE_LENGTH).fill(''));
-        inputRefs.current[0]?.focus();
-      }
+      setDigits(Array(CODE_LENGTH).fill(''));
+      inputRefs.current[0]?.focus();
       setCooldown(RESEND_COOLDOWN);
     } catch (err: any) {
       setError(err.message || 'Failed to resend code');
@@ -111,13 +101,6 @@ export function LoginVerifyScreen() {
           Enter it below to sign in.
         </p>
       </div>
-
-      {debugCode && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-yellow-800 text-sm text-center">
-          <strong>Dev mode</strong> — email delivery under review.<br />
-          Your code: <span className="font-mono font-bold tracking-widest">{debugCode}</span>
-        </div>
-      )}
 
       {success ? (
         <div className="flex flex-col items-center gap-3 py-4">

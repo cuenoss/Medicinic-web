@@ -11,14 +11,14 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<{ requiresOTP: boolean; email?: string; debugCode?: string }>;
+  login: (email: string, password: string) => Promise<{ requiresOTP: boolean; email?: string }>;
   register: (userData: {
     fullName: string;
     email: string;
     phone: string;
     password: string;
     confirmPassword: string;
-  }) => Promise<{ email: string; debugCode?: string }>;
+  }) => Promise<{ email: string }>;
   verifyEmail: (email: string, code: string) => Promise<void>;
   resendVerification: (email: string) => Promise<any>;
   logout: () => void;
@@ -57,14 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ requiresOTP: boolean; email?: string; debugCode?: string }> => {
+  const login = async (email: string, password: string): Promise<{ requiresOTP: boolean; email?: string }> => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await api.login(email, password) as any;
       // New flow: login returns OTP challenge
       if (response.status === 'code_sent') {
-        return { requiresOTP: true, email: response.email, debugCode: response.debug_code };
+        return { requiresOTP: true, email: response.email };
       }
       // Legacy / fallback: direct token
       localStorage.setItem('access_token', response.access_token);
@@ -86,12 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phone: string;
     password: string;
     confirmPassword: string;
-  }): Promise<{ email: string; debugCode?: string }> => {
+  }): Promise<{ email: string }> => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.register(userData) as { email: string; message: string; debug_code?: string };
-      return { email: response.email, debugCode: response.debug_code };
+      const response = await api.register(userData) as { email: string; message: string };
+      return { email: response.email };
     } catch (err: any) {
       setError(err.message || 'Registration failed');
       throw err;
