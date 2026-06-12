@@ -18,7 +18,7 @@ interface AuthContextType {
     phone: string;
     password: string;
     confirmPassword: string;
-  }) => Promise<string>;
+  }) => Promise<{ email: string; debugCode?: string }>;
   verifyEmail: (email: string, code: string) => Promise<void>;
   resendVerification: (email: string) => Promise<void>;
   logout: () => void;
@@ -84,12 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phone: string;
     password: string;
     confirmPassword: string;
-  }): Promise<string> => {
+  }): Promise<{ email: string; debugCode?: string }> => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.register(userData) as { email: string; message: string };
-      return response.email;
+      const response = await api.register(userData) as { email: string; message: string; debug_code?: string };
+      return { email: response.email, debugCode: response.debug_code };
     } catch (err: any) {
       setError(err.message || 'Registration failed');
       throw err;

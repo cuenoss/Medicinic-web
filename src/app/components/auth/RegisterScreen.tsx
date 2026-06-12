@@ -24,8 +24,8 @@ export function RegisterScreen() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const email = await register(formData);
-      navigate('/auth/verify-email', { state: { email } });
+      const result = await register(formData);
+      navigate('/auth/verify-email', { state: { email: result.email, debugCode: result.debugCode } });
     } catch (error) {
       console.error('Registration failed:', error);
     }

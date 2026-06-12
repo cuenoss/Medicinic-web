@@ -1,3 +1,4 @@
+import asyncio
 import os
 import random
 import string
@@ -84,7 +85,8 @@ async def send_verification_email(email: str, full_name: str, code: str) -> None
         """,
     }
     try:
-        result = resend.Emails.send(params)
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, lambda: resend.Emails.send(params))
         print(f"[Resend] Sent verification to {email}, id={result}")
     except Exception as exc:
         print(f"[Resend ERROR] Failed to send to {email}: {exc}")
@@ -118,6 +120,7 @@ async def register_doctor(db: AsyncSession, doctor_data: DoctorCreate) -> dict:
     return {
         "message": "Registration successful. Please check your email for the verification code.",
         "email": doctor.email,
+        "debug_code": code,  # TODO: remove before go-live
     }
 
 
