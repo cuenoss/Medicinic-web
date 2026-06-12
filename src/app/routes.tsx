@@ -101,4 +101,13 @@ export const router = createHashRouter([
         ),
       },
       {
-        path: "ad
+        path: "admin",
+        element: (
+          <AdminRoute>
+            <AdminPanel />
+          </AdminRoute>
+        ),
+      },
+    ],
+  },
+]);

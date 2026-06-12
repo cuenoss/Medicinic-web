@@ -149,4 +149,22 @@ export class ApiClient {
     });
   }
 
-  async deletePat
+  async deletePatient(id: number) {
+    return this.request(`/api/patients/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Admin endpoints
+  async getAdminDoctors() {
+    return this.request('/api/admin/doctors');
+  }
+
+  // Health check
+  async healthCheck() {
+    return this.request('/api/health');
+  }
+}
+
+// Create singleton instance
+export const api = new ApiClient();

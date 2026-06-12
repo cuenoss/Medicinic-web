@@ -14,3 +14,5 @@ class Doctor(Base):
     is_verified = Column(Boolean, default=False, nullable=False, server_default="false")
     verification_code = Column(String, nullable=True)
     verification_code_expires_at = Column(DateTime, nullable=True)
+
+
