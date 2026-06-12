@@ -19,7 +19,7 @@ export function VerifyEmailScreen() {
     debugCode ? debugCode.slice(0, CODE_LENGTH).split('') : Array(CODE_LENGTH).fill('')
   );
   const [success, setSuccess] = useState(false);
-  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
+  const [cooldown, setCooldown] = useState(0);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
