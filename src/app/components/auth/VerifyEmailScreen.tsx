@@ -14,7 +14,7 @@ export function VerifyEmailScreen() {
   const { verifyEmail, resendVerification, isLoading, error } = useAuth();
 
   const [email, setEmail] = useState<string>((location.state as any)?.email ?? '');
-  const debugCode: string = (location.state as any)?.debugCode ?? '';
+  const [debugCode, setDebugCode] = useState<string>((location.state as any)?.debugCode ?? '');
   const [digits, setDigits] = useState<string[]>(
     debugCode ? debugCode.slice(0, CODE_LENGTH).split('') : Array(CODE_LENGTH).fill('')
   );
@@ -74,9 +74,14 @@ export function VerifyEmailScreen() {
   async function handleResend() {
     if (cooldown > 0 || !email) return;
     try {
-      await resendVerification(email);
-      setDigits(Array(CODE_LENGTH).fill(''));
-      inputRefs.current[0]?.focus();
+      const res = await resendVerification(email) as any;
+      if (res?.debug_code) {
+        setDebugCode(res.debug_code);
+        setDigits(res.debug_code.slice(0, CODE_LENGTH).split(''));
+      } else {
+        setDigits(Array(CODE_LENGTH).fill(''));
+        inputRefs.current[0]?.focus();
+      }
       setCooldown(RESEND_COOLDOWN);
     } catch {
       // error shown via AuthContext

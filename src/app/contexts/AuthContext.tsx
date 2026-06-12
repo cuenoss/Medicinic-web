@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      await api.resendVerification(email);
+      return await api.resendVerification(email);
     } catch (err: any) {
       setError(err.message || 'Failed to resend code');
       throw err;

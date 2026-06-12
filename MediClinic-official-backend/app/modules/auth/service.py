@@ -165,7 +165,7 @@ async def resend_verification_code(db: AsyncSession, email: str) -> dict:
     await db.commit()
 
     await send_verification_email(doctor.email, doctor.fullName, code)
-    return {"message": "A new verification code has been sent to your email."}
+    return {"message": "A new verification code has been sent to your email.", "debug_code": code}
 
 
 async def login_doctor(db: AsyncSession, doctor_data: DoctorLogin) -> TokenResponse:
