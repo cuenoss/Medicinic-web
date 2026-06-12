@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { ShieldCheck, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
+import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 
 const CODE_LENGTH = 6;
@@ -12,6 +13,7 @@ export function LoginVerifyScreen() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const { verifyLogin, isLoading: authLoading } = useAuth();
   const email: string = (location.state as any)?.email ?? '';
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [success, setSuccess] = useState(false);
@@ -54,18 +56,13 @@ export function LoginVerifyScreen() {
     e.preventDefault();
     const code = digits.join('');
     if (code.length < CODE_LENGTH) return;
-    setIsLoading(true);
     setError(null);
     try {
-      const response = await api.verifyLogin(email, code) as any;
-      localStorage.setItem('access_token', response.access_token);
-      localStorage.setItem('user', JSON.stringify(response.doctor));
+      await verifyLogin(email, code);
       setSuccess(true);
       setTimeout(() => navigate('/'), 1500);
     } catch (err: any) {
       setError(err.message || 'Invalid code');
-    } finally {
-      setIsLoading(false);
     }
   }
 
@@ -139,7 +136,7 @@ export function LoginVerifyScreen() {
           <Button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700"
-            disabled={isLoading || digits.join('').length < CODE_LENGTH}
+            disabled={isLoading || authLoading || digits.join('').length < CODE_LENGTH}
           >
             {isLoading ? 'Verifying…' : 'Sign In'}
           </Button>
@@ -149,7 +146,7 @@ export function LoginVerifyScreen() {
             <button
               type="button"
               onClick={handleResend}
-              disabled={cooldown > 0 || isLoading}
+              disabled={cooldown > 0 || isLoading || authLoading}
               className={
                 'inline-flex items-center gap-1 font-medium ' +
                 (cooldown > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-700')
