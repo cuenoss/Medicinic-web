@@ -20,7 +20,12 @@ export function LoginScreen() {
     try {
       await login(formData.email, formData.password);
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.status === 403) {
+        // Email not verified — send them straight to the verify screen
+        navigate('/auth/verify-email', { state: { email: formData.email } });
+        return;
+      }
       console.error('Login failed:', error);
     }
   };

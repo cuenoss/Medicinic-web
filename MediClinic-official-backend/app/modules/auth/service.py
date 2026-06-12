@@ -25,7 +25,7 @@ VERIFICATION_CODE_EXPIRE_MINUTES = 15
 ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "MediClinic <noreply@mediclinic.app>")
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
 resend.api_key = RESEND_API_KEY
 
@@ -83,7 +83,12 @@ async def send_verification_email(email: str, full_name: str, code: str) -> None
         </div>
         """,
     }
-    resend.Emails.send(params)
+    try:
+        result = resend.Emails.send(params)
+        print(f"[Resend] Sent verification to {email}, id={result}")
+    except Exception as exc:
+        print(f"[Resend ERROR] Failed to send to {email}: {exc}")
+        # Don't raise — user is already registered and can use 'Resend code'
 
 # ── Auth functions ────────────────────────────────────────────────────────────
 async def register_doctor(db: AsyncSession, doctor_data: DoctorCreate) -> dict:

@@ -53,7 +53,9 @@ export class ApiClient {
           error: errorData
         });
 
-        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        const apiError: any = new Error(errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        apiError.status = response.status;
+        throw apiError;
       }
 
       const data = await response.json();
