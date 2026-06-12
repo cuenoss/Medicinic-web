@@ -38,3 +38,15 @@ async def list_doctors(db: AsyncSession = Depends(get_db)) -> List[Dict[str, Any
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch accounts: {str(e)}")
+
+
+@router.delete("/doctors/{doctor_id}")
+async def delete_doctor(doctor_id: int, db: AsyncSession = Depends(get_db)) -> Dict[str, str]:
+    """Permanently delete a doctor account from the database."""
+    result = await db.execute(select(Doctor).where(Doctor.id == doctor_id))
+    doctor = result.scalars().first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    await db.delete(doctor)
+    await db.commit()
+    return {"message": f"Account {doctor.email} deleted successfully"}

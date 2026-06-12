@@ -190,6 +190,10 @@ export class ApiClient {
     return this.request('/api/admin/doctors');
   }
 
+  async deleteDoctor(id: number) {
+    return this.request(`/api/admin/doctors/${id}`, { method: 'DELETE' });
+  }
+
   // Health check
   async healthCheck() {
     return this.request('/api/health');
