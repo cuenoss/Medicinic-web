@@ -482,7 +482,8 @@ export function PatientProfile() {
           <head>
             <title>Ordonnance - ${patient?.name || 'Loading...'}</title>
             <style>
-              body { 
+              @page { margin: 0; }
+              body {
                 font-family: 'Times New Roman', serif; 
                 margin: 40px; 
                 background: white;
@@ -514,7 +515,9 @@ export function PatientProfile() {
                 background: #fafafa;
                 white-space: pre-wrap;
                 font-family: 'Courier New', monospace;
-                font-size: 14px;
+                font-size: 19px;
+                font-weight: bold;
+                color: #000;
               }
               .footer {
                 border-top: 2px solid #333;
@@ -559,9 +562,8 @@ ${content}
               <p>_________________________</p>
               <p>Signature et cachet</p>
             </div>
-            <div class="footer" style="display:flex; justify-content:space-between; text-align:left;">
-              <div>${ordonnanceAddress || ''}${ordonnancePhone ? `<br>${ordonnancePhone}` : ''}</div>
-              <div>Généré par MediClinic</div>
+            <div class="footer" style="text-align:center; font-size:18px; font-weight:bold; color:#000;">
+              ${ordonnanceAddress || ''}${ordonnancePhone ? `<br>${ordonnancePhone}` : ''}
             </div>
           </body>
         </html>
@@ -580,7 +582,8 @@ ${content}
           <head>
             <title>Ordonnance - ${patient?.name || 'Loading...'}</title>
             <style>
-              body { 
+              @page { margin: 0; }
+              body {
                 font-family: 'Times New Roman', serif; 
                 margin: 40px; 
                 background: white;
@@ -612,7 +615,9 @@ ${content}
                 background: #fafafa;
                 white-space: pre-wrap;
                 font-family: 'Courier New', monospace;
-                font-size: 14px;
+                font-size: 19px;
+                font-weight: bold;
+                color: #000;
                 line-height: 1.8;
               }
               .footer { 
@@ -652,9 +657,8 @@ ${ordonnanceContent}
               <p>_________________________</p>
               <p>Signature et cachet</p>
             </div>
-            <div class="footer" style="display:flex; justify-content:space-between; text-align:left;">
-              <div>${ordonnanceAddress || ''}${ordonnancePhone ? `<br>${ordonnancePhone}` : ''}</div>
-              <div>Généré par MediClinic</div>
+            <div class="footer" style="text-align:center; font-size:18px; font-weight:bold; color:#000;">
+              ${ordonnanceAddress || ''}${ordonnancePhone ? `<br>${ordonnancePhone}` : ''}
             </div>
           </body>
         </html>
