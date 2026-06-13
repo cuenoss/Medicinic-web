@@ -21,6 +21,7 @@ from app.db import get_db
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 VERIFICATION_CODE_EXPIRE_MINUTES = 15
 
 ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
@@ -47,6 +48,13 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def create_refresh_token(data: dict) -> str:
+    """Long-lived token used only to obtain a new access token (type='refresh')."""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def generate_verification_code(length: int = 6) -> str:
@@ -212,11 +220,17 @@ async def verify_login_code(db: AsyncSession, email: str, code: str) -> TokenRes
         data={"sub": doctor.email, "doctor_id": doctor.id},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
+    refresh_token = create_refresh_token(data={"sub": doctor.email, "doctor_id": doctor.id})
 
     doctor_response = DoctorResponse.from_orm(doctor)
     doctor_response.is_admin = is_admin_email(doctor.email)
 
-    return TokenResponse(access_token=access_token, token_type="bearer", doctor=doctor_response)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        doctor=doctor_response,
+    )
 
 
 async def resend_login_code(db: AsyncSession, email: str) -> dict:
@@ -265,6 +279,39 @@ async def reset_password(db: AsyncSession, token: str, new_password: str) -> dic
     await db.commit()
 
     return {"message": "Password reset successful"}
+
+
+async def refresh_access_token(db: AsyncSession, refresh_token: str) -> TokenResponse:
+    """Exchange a valid refresh token for a fresh access + refresh token pair."""
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+
+    doctor = await get_doctor_by_email(db, email)
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not found")
+
+    access_token = create_access_token(
+        data={"sub": doctor.email, "doctor_id": doctor.id},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    new_refresh_token = create_refresh_token(data={"sub": doctor.email, "doctor_id": doctor.id})
+
+    doctor_response = DoctorResponse.from_orm(doctor)
+    doctor_response.is_admin = is_admin_email(doctor.email)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+        doctor=doctor_response,
+    )
 
 
 async def get_current_doctor(

@@ -88,6 +88,7 @@ export function LoginScreen() {
     try {
       const response = await api.verifyLogin(formData.email, code) as any;
       localStorage.setItem('access_token', response.access_token);
+      if (response.refresh_token) localStorage.setItem('refresh_token', response.refresh_token);
       localStorage.setItem('user', JSON.stringify(response.doctor));
       // Force a full reload so AuthContext picks up the new token
       window.location.href = '/';

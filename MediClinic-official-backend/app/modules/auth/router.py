@@ -5,10 +5,11 @@ from .models import Doctor
 from .service import (
     register_doctor, login_doctor, forgot_password, reset_password,
     verify_email_code, resend_verification_code, verify_login_code, resend_login_code, get_current_doctor,
+    refresh_access_token,
 )
 from .schemas import (
     DoctorCreate, DoctorLogin, DoctorResponse, TokenResponse,
-    VerifyEmailRequest, ResendVerificationRequest,
+    VerifyEmailRequest, ResendVerificationRequest, RefreshRequest,
 )
 from app.db import get_db
 
@@ -73,6 +74,17 @@ async def login(
 async def verify_login(body: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
     try:
         return await verify_login_code(db, body.email, body.code)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
+    """Exchange a valid refresh token for a new access token (no re-login)."""
+    try:
+        return await refresh_access_token(db, body.refresh_token)
     except HTTPException:
         raise
     except Exception as e:
