@@ -43,6 +43,10 @@ export function PatientProfile() {
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [showOrdonnanceModal, setShowOrdonnanceModal] = useState(false);
   const [ordonnanceContent, setOrdonnanceContent] = useState('');
+  // Doctor details printed on the prescription header — remembered in the browser
+  const [ordonnanceSpeciality, setOrdonnanceSpeciality] = useState(() => localStorage.getItem('ordonnance_speciality') || '');
+  const [ordonnanceAddress, setOrdonnanceAddress] = useState(() => localStorage.getItem('ordonnance_address') || '');
+  const [ordonnancePhone, setOrdonnancePhone] = useState(() => localStorage.getItem('ordonnance_phone') || '');
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [showConsultationDetails, setShowConsultationDetails] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<AttachedFile[]>([]);
@@ -531,17 +535,19 @@ export function PatientProfile() {
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>Médiclinic</h1>
-              <p>Ordonnance Médicale</p>
+            <div style="margin-bottom: 6px;">
+              <div style="font-size: 26px; font-weight: bold; text-transform: uppercase;">Dr ${user?.fullName || ''}</div>
+              ${ordonnanceSpeciality ? `<div style="font-size: 15px; font-weight: bold; margin-top: 2px;">${ordonnanceSpeciality}</div>` : ''}
+              ${ordonnanceAddress ? `<div style="font-size: 12px; margin-top: 2px;">${ordonnanceAddress}</div>` : ''}
             </div>
-            
-            <div class="patient-info">
-              <div>
-                <strong>Patient:</strong> ${patient?.name || 'Loading...'}
-              </div>
-              <div>
-                <strong>Date:</strong> ${new Date().toLocaleString()}
+            <div style="border-bottom: 3px solid #000; margin: 10px 0 26px 0;"></div>
+            <div style="text-align: center; font-size: 26px; font-weight: bold; margin: 0 0 26px 0;">Ordonnance</div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 26px;">
+              <div>Fait le : ${new Date().toLocaleDateString()}</div>
+              <div style="text-align: right;">
+                A Patient(e) : <strong>${patient?.name || ''}</strong>
+                <div style="font-size: 13px; margin-top: 2px;">Age : ${patient?.age || ''} ans</div>
               </div>
             </div>
             
@@ -549,13 +555,13 @@ export function PatientProfile() {
 ${content}
             </div>
             
-            <div class="footer">
-              <p>Doctor: ${user?.fullName || 'Unknown Doctor'}</p>
-              <p>Generated: ${new Date().toLocaleString()}</p>
-            </div>
             <div class="signature">
               <p>_________________________</p>
-              <p>Doctor's Signature</p>
+              <p>Signature et cachet</p>
+            </div>
+            <div class="footer" style="display:flex; justify-content:space-between; text-align:left;">
+              <div>${ordonnanceAddress || ''}${ordonnancePhone ? `<br>${ordonnancePhone}` : ''}</div>
+              <div>Généré par MediClinic</div>
             </div>
           </body>
         </html>
@@ -624,30 +630,31 @@ ${content}
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>ORDONNANCE</h1>
+            <div style="margin-bottom: 6px;">
+              <div style="font-size: 26px; font-weight: bold; text-transform: uppercase;">Dr ${user?.fullName || ''}</div>
+              ${ordonnanceSpeciality ? `<div style="font-size: 15px; font-weight: bold; margin-top: 2px;">${ordonnanceSpeciality}</div>` : ''}
+              ${ordonnanceAddress ? `<div style="font-size: 12px; margin-top: 2px;">${ordonnanceAddress}</div>` : ''}
             </div>
-            <div class="patient-info">
-              <div>
-                <strong>Patient:</strong> ${patient?.name || 'Loading...'}<br>
-                <strong>Age:</strong> ${patient?.age || 'N/A'} years<br>
-                <strong>Gender:</strong> ${patient?.gender || 'N/A'}
-              </div>
-              <div>
-                <strong>Date:</strong> ${new Date().toLocaleDateString()}<br>
-                <strong>Type:</strong> Prescription
+            <div style="border-bottom: 3px solid #000; margin: 10px 0 26px 0;"></div>
+            <div style="text-align: center; font-size: 26px; font-weight: bold; margin: 0 0 26px 0;">Ordonnance</div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 26px;">
+              <div>Fait le : ${new Date().toLocaleDateString()}</div>
+              <div style="text-align: right;">
+                A Patient(e) : <strong>${patient?.name || ''}</strong>
+                <div style="font-size: 13px; margin-top: 2px;">Age : ${patient?.age || ''} ans</div>
               </div>
             </div>
             <div class="content">
 ${ordonnanceContent}
             </div>
-            <div class="footer">
-              <p>Doctor: ${user?.fullName || 'Unknown Doctor'}</p>
-              <p>Generated: ${new Date().toLocaleString()}</p>
-            </div>
             <div class="signature">
               <p>_________________________</p>
-              <p>Doctor's Signature</p>
+              <p>Signature et cachet</p>
+            </div>
+            <div class="footer" style="display:flex; justify-content:space-between; text-align:left;">
+              <div>${ordonnanceAddress || ''}${ordonnancePhone ? `<br>${ordonnancePhone}` : ''}</div>
+              <div>Généré par MediClinic</div>
             </div>
           </body>
         </html>
@@ -955,6 +962,39 @@ ${ordonnanceContent}
           <Card className="p-6">
             <h4 className="font-semibold text-slate-800 mb-4">{t('profile.createNewOrdonnance')}</h4>
             <div className="space-y-4">
+              {/* Doctor details — printed at the top of the prescription, remembered in the browser */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.speciality')}</label>
+                  <input
+                    type="text"
+                    value={ordonnanceSpeciality}
+                    onChange={(e) => { setOrdonnanceSpeciality(e.target.value); localStorage.setItem('ordonnance_speciality', e.target.value); }}
+                    placeholder={t('profile.specialityPlaceholder')}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.clinicAddress')}</label>
+                  <input
+                    type="text"
+                    value={ordonnanceAddress}
+                    onChange={(e) => { setOrdonnanceAddress(e.target.value); localStorage.setItem('ordonnance_address', e.target.value); }}
+                    placeholder={t('profile.clinicAddressPlaceholder')}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.clinicPhone')}</label>
+                  <input
+                    type="text"
+                    value={ordonnancePhone}
+                    onChange={(e) => { setOrdonnancePhone(e.target.value); localStorage.setItem('ordonnance_phone', e.target.value); }}
+                    placeholder={t('profile.clinicPhonePlaceholder')}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   {t('profile.ordonnanceContent')}
@@ -1589,7 +1629,6 @@ ${ordonnanceContent}
                       <option value="">{t('profile.select')}</option>
                       <option value="Male">{t('common.male')}</option>
                       <option value="Female">{t('common.female')}</option>
-                      <option value="Other">{t('profile.other')}</option>
                     </select>
                   </div>
 
