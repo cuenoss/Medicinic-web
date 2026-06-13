@@ -410,7 +410,6 @@ export function Dashboard() {
                       <option value="">Select...</option>
                       <option value="Male">{t('dashboard.male')}</option>
                       <option value="Female">{t('dashboard.female')}</option>
-                      <option value="Other">{t('dashboard.other')}</option>
                     </select>
                   </div>
                 </div>
