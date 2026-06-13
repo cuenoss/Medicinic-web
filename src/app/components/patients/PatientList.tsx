@@ -122,7 +122,6 @@ export function PatientList() {
                   <option value="">— {t('common.filter')} —</option>
                   <option value="Male">{t('patients.male')}</option>
                   <option value="Female">{t('patients.female')}</option>
-                  <option value="Other">{t('patients.other')}</option>
                 </select>
               </div>
 

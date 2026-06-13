@@ -133,7 +133,6 @@ export function CreatePatient() {
                     <option value="">{t('patients.selectGender')}</option>
                     <option value="Male">{t('patients.male')}</option>
                     <option value="Female">{t('patients.female')}</option>
-                    <option value="Other">{t('patients.other')}</option>
                   </select>
                 </div>
                 <div>
