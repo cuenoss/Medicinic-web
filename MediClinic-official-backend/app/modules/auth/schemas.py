@@ -45,9 +45,10 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
     doctor: DoctorResponse
-    
+
     class Config:
         from_attributes = True
 
@@ -58,3 +59,7 @@ class VerifyEmailRequest(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str

@@ -35,26 +35,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('access_token');
-    const storedUser = localStorage.getItem('user');
+    const init = async () => {
+      const storedToken = localStorage.getItem('access_token');
+      const storedUser = localStorage.getItem('user');
+      const refreshToken = localStorage.getItem('refresh_token');
 
-    if (storedToken && storedUser) {
-      try {
-        const payload = JSON.parse(atob(storedToken.split('.')[1]));
-        const isExpired = payload.exp * 1000 < Date.now();
-        if (isExpired) {
+      if (storedToken && storedUser) {
+        try {
+          const payload = JSON.parse(atob(storedToken.split('.')[1]));
+          const isExpired = payload.exp * 1000 < Date.now();
+          if (isExpired) {
+            // Access token expired — try the refresh token before logging out
+            if (refreshToken && (await api.refreshSession())) {
+              setUser(JSON.parse(localStorage.getItem('user') as string));
+              setToken(localStorage.getItem('access_token'));
+            } else {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              localStorage.removeItem('user');
+            }
+          } else {
+            setUser(JSON.parse(storedUser));
+            setToken(storedToken);
+          }
+        } catch {
           localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
           localStorage.removeItem('user');
-        } else {
-          setUser(JSON.parse(storedUser));
-          setToken(storedToken);
         }
-      } catch {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+    init();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -126,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     setUser(null);
     setToken(null);

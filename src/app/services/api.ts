@@ -9,9 +9,42 @@ export class ApiClient {
     this.baseURL = baseURL;
   }
 
+  private refreshing: Promise<boolean> | null = null;
+
+  // Exchange the refresh token for a new access token. De-duplicated so that
+  // many simultaneous 401s trigger only one refresh call.
+  async refreshSession(): Promise<boolean> {
+    if (!this.refreshing) {
+      this.refreshing = this.doRefresh().finally(() => { this.refreshing = null; });
+    }
+    return this.refreshing;
+  }
+
+  private async doRefresh(): Promise<boolean> {
+    const refresh_token = localStorage.getItem('refresh_token');
+    if (!refresh_token) return false;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data.access_token) return false;
+      localStorage.setItem('access_token', data.access_token);
+      if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+      if (data.doctor) localStorage.setItem('user', JSON.stringify(data.doctor));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   protected async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry = false
   ): Promise<T> {
     const config: RequestInit = {
       headers: {
@@ -36,6 +69,20 @@ export class ApiClient {
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
+      // Access token expired → silently refresh once, then retry the request
+      if (response.status === 401 && !isRetry && !endpoint.includes('/auth/') && localStorage.getItem('refresh_token')) {
+        const refreshed = await this.refreshSession();
+        if (refreshed) {
+          return this.request<T>(endpoint, options, true);
+        }
+        // Refresh token also invalid/expired → session is truly over
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        if (typeof window !== 'undefined') window.location.reload();
+        throw new Error('Session expired. Please log in again.');
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
