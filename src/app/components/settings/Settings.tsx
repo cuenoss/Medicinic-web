@@ -9,6 +9,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../services/api';
 import { settingsService } from '../../services/settings';
 import { useTranslation } from 'react-i18next';
 
@@ -20,6 +21,7 @@ export function Settings() {
   const [savingClinic, setSavingClinic] = useState(false);
   const [savingHours, setSavingHours] = useState(false);
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [backupLoading, setBackupLoading] = useState(false);
 
   const [clinicInfo, setClinicInfo] = useState({
     name: '',
@@ -53,6 +55,80 @@ export function Settings() {
     email: '',
     phone: '',
   });
+
+  const saveBlobToLocation = async (blob: Blob, filename: string) => {
+    const isElectron = typeof window !== 'undefined' && (window as any).process?.type;
+
+    if (isElectron) {
+      try {
+        const electron = (window as any).require?.('electron');
+        const dialog = electron?.remote?.dialog ?? electron?.dialog;
+        const fs = (window as any).require?.('fs');
+
+        if (dialog && fs) {
+          const { canceled, filePath } = await dialog.showSaveDialog({
+            title: 'Save Backup File',
+            defaultPath: filename,
+            buttonLabel: 'Save Backup',
+            filters: [
+              { name: 'GZip Archive', extensions: ['gz'] },
+              { name: 'SQL Dump', extensions: ['sql'] },
+            ],
+          });
+
+          if (!canceled && filePath) {
+            const buffer = Buffer.from(await blob.arrayBuffer());
+            await fs.promises.writeFile(filePath, buffer);
+            return;
+          }
+        }
+      } catch (electronError) {
+        console.warn('Electron save dialog failed, falling back to browser save:', electronError);
+      }
+    }
+
+    if (typeof (window as any).showSaveFilePicker === 'function') {
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: filename,
+        types: [
+          {
+            description: 'GZip Archive',
+            accept: { 'application/gzip': ['.gz'] },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    }
+
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const downloadLocalBackup = async () => {
+    try {
+      setBackupLoading(true);
+      const { blob, filename } = await api.downloadLocalBackup();
+      await saveBlobToLocation(blob, filename);
+    } catch (error) {
+      console.error('Local backup failed:', error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Local backup failed. Please try again or check your permissions.'
+      );
+    } finally {
+      setBackupLoading(false);
+    }
+  };
 
   // Load settings from API on mount
   useEffect(() => {
@@ -362,9 +438,14 @@ export function Settings() {
             <Card className="p-5 border-2 border-slate-200">
               <h3 className="font-semibold text-slate-800 mb-2">{t('settings.localBackup')}</h3>
               <p className="text-sm text-slate-600 mb-4">{t('settings.localBackupDesc')}</p>
-              <Button variant="outline" className="w-full" onClick={() => alert('Local backup initiated...')}>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={downloadLocalBackup}
+                disabled={backupLoading}
+              >
                 <Database className="w-4 h-4 mr-2" />
-                {t('settings.backupLocally')}
+                {backupLoading ? 'Downloading...' : t('settings.backupLocally')}
               </Button>
             </Card>
             <Card className="p-5 border-2 border-blue-200 bg-blue-50">

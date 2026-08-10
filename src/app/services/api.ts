@@ -249,6 +249,85 @@ export class ApiClient {
   async healthCheck() {
     return this.request('/api/health');
   }
+
+  protected async downloadFile(
+    endpoint: string,
+    options: RequestInit = {},
+    isRetry = false
+  ): Promise<{ blob: Blob; filename: string }> {
+    const headers: Record<string, string> = {
+      ...(options.headers as Record<string, string>),
+    };
+
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const config: RequestInit = {
+      ...options,
+      headers,
+    };
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
+    if (
+      response.status === 401 &&
+      !isRetry &&
+      !endpoint.includes('/auth/') &&
+      localStorage.getItem('refresh_token')
+    ) {
+      const refreshed = await this.refreshSession();
+      if (refreshed) {
+        return this.downloadFile(endpoint, options, true);
+      }
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      if (typeof window !== 'undefined') window.location.reload();
+      throw new Error('Session expired. Please log in again.');
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { detail: errorText };
+      }
+
+      console.error('Download API Error:', {
+        endpoint,
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+      });
+
+      const apiError: any = new Error(
+        errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`
+      );
+      apiError.status = response.status;
+      throw apiError;
+    }
+
+    const blob = await response.blob();
+    const datePrefix = new Date().toISOString().slice(0, 10);
+    let filename = `${datePrefix}_clinic_backup.sql.gz`;
+    const disposition = response.headers.get('content-disposition');
+    if (disposition) {
+      const match = /filename\*?=(?:UTF-8''|\")?([^;\"\n]+)/i.exec(disposition);
+      if (match) {
+        filename = decodeURIComponent(match[1].replace(/"/g, '').trim());
+      }
+    }
+
+    return { blob, filename };
+  }
+
+  async downloadLocalBackup() {
+    return this.downloadFile('/api/backup/local', { method: 'POST' });
+  }
 }
 
 // Create singleton instance

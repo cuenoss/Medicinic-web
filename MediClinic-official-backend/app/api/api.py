@@ -11,6 +11,7 @@ from app.modules.dashboard.router import router as dashboard_router
 from app.modules.finance.router import router as finance_router
 from app.modules.settings.router import router as settings_router
 from app.modules.admin.router import router as admin_router
+from app.modules.backup.router import router as backup_router
 
 api_router = APIRouter()
 
@@ -30,6 +31,11 @@ api_router.include_router(settings_router, prefix="/settings", tags=["settings"]
 # Admin routes — require a valid token AND an admin email (ADMIN_EMAILS)
 api_router.include_router(
     admin_router, prefix="/admin", tags=["admin"],
+    dependencies=[Depends(get_current_admin)],
+)
+
+api_router.include_router(
+    backup_router, prefix="/backup", tags=["backup"],
     dependencies=[Depends(get_current_admin)],
 )
 
