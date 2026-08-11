@@ -39,7 +39,11 @@ class ConsultationBase(BaseModel):
     
     # Family Medical History
     family_history: Optional[str] = None
-    
+
+    # Procedures
+    diagnostic_procedures: Optional[List[str]] = []
+    therapeutic_procedures: Optional[List[str]] = []
+
     # Consultation Details
     diagnosis: Optional[str] = None
     date: datetime
@@ -85,7 +89,11 @@ class ConsultationUpdate(BaseModel):
     
     # Family Medical History
     family_history: Optional[str] = None
-    
+
+    # Procedures
+    diagnostic_procedures: Optional[List[str]] = None
+    therapeutic_procedures: Optional[List[str]] = None
+
     # Consultation Details
     diagnosis: Optional[str] = None
     date: Optional[datetime] = None
@@ -117,6 +125,8 @@ class ConsultationResponse(BaseModel):
     chronic_conditions: Optional[str] = None
     surgeries: Optional[str] = None
     family_history: Optional[str] = None
+    diagnostic_procedures: Optional[List[str]] = []
+    therapeutic_procedures: Optional[List[str]] = []
     diagnosis: Optional[str] = None
     date: datetime
     doctor: str

@@ -28,6 +28,12 @@ import { patientsService, Patient, PatientUpdate, AttachedFile } from '../../ser
 import { consultationsService, Consultation } from '../../services/consultations';
 import { ordonnancesService, Ordonnance } from '../../services/ordonnances';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  DIAGNOSTIC_PROCEDURE_OPTIONS,
+  THERAPEUTIC_PROCEDURE_OPTIONS,
+  PROCEDURE_LABEL_KEYS,
+  buildProcedureList,
+} from '../consultations/procedureOptions';
 
 export function PatientProfile() {
   const { t } = useTranslation();
@@ -108,12 +114,31 @@ export function PatientProfile() {
     
     // Family Medical History
     familyHistory: '',
-    
+
+    // Procedures
+    diagnosticProcedures: [] as string[],
+    diagnosticProceduresOther: '',
+    therapeuticProcedures: [] as string[],
+    therapeuticProceduresOther: '',
+
     // Consultation Details
     diagnosis: '',
     date: '',
     doctor: ''
   });
+
+  const toggleNewConsultationProcedure = (
+    field: 'diagnosticProcedures' | 'therapeuticProcedures',
+    value: string
+  ) => {
+    setNewConsultation((prev) => {
+      const list = prev[field];
+      const next = list.includes(value)
+        ? list.filter((item) => item !== value)
+        : [...list, value];
+      return { ...prev, [field]: next };
+    });
+  };
 
   // Load patient data
   useEffect(() => {
@@ -368,6 +393,14 @@ export function PatientProfile() {
           chronic_conditions: newConsultation.chronicConditions,
           surgeries: newConsultation.surgeries,
           family_history: newConsultation.familyHistory,
+          diagnostic_procedures: buildProcedureList(
+            newConsultation.diagnosticProcedures,
+            newConsultation.diagnosticProceduresOther
+          ),
+          therapeutic_procedures: buildProcedureList(
+            newConsultation.therapeuticProcedures,
+            newConsultation.therapeuticProceduresOther
+          ),
           diagnosis: newConsultation.diagnosis,
           date: newConsultation.date,
           doctor: newConsultation.doctor
@@ -418,13 +451,19 @@ export function PatientProfile() {
           
           // Family Medical History
           familyHistory: '',
-          
+
+          // Procedures
+          diagnosticProcedures: [],
+          diagnosticProceduresOther: '',
+          therapeuticProcedures: [],
+          therapeuticProceduresOther: '',
+
           // Consultation Details
           diagnosis: '',
           date: '',
           doctor: ''
         });
-        
+
         alert(t('profile.consultationAdded'));
       } catch (error) {
         console.error('Failed to add consultation:', error);
@@ -1296,6 +1335,59 @@ ${ordonnanceContent}
                   </div>
                 </div>
 
+                {/* 8. Procedures */}
+                <div className="bg-teal-50 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold text-teal-800 mb-4">{t('profile.proceduresTitle')}</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.diagnosticProceduresTitle')}</label>
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        {DIAGNOSTIC_PROCEDURE_OPTIONS.map(option => (
+                          <label key={option.value} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={newConsultation.diagnosticProcedures.includes(option.value)}
+                              onChange={() => toggleNewConsultationProcedure('diagnosticProcedures', option.value)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">{t(option.labelKey)}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        value={newConsultation.diagnosticProceduresOther}
+                        onChange={(e) => setNewConsultation({...newConsultation, diagnosticProceduresOther: e.target.value})}
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                        placeholder={t('profile.otherProceduresPlaceholder')}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.therapeuticProceduresTitle')}</label>
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        {THERAPEUTIC_PROCEDURE_OPTIONS.map(option => (
+                          <label key={option.value} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={newConsultation.therapeuticProcedures.includes(option.value)}
+                              onChange={() => toggleNewConsultationProcedure('therapeuticProcedures', option.value)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">{t(option.labelKey)}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        value={newConsultation.therapeuticProceduresOther}
+                        onChange={(e) => setNewConsultation({...newConsultation, therapeuticProceduresOther: e.target.value})}
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                        placeholder={t('profile.otherProceduresPlaceholder')}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Consultation Details */}
                 <div className="bg-slate-50 p-4 rounded-lg">
                   <h4 className="text-lg font-semibold text-slate-800 mb-4">{t('profile.consultationDetails')}</h4>
@@ -1503,6 +1595,29 @@ ${ordonnanceContent}
                 <div className="bg-pink-50 p-4 rounded-lg">
                   <h4 className="text-lg font-semibold text-pink-800 mb-4">{t('profile.familyMedicalHistory')}</h4>
                   <p className="text-slate-800">{selectedConsultation.family_history || t('profile.none')}</p>
+                </div>
+
+                {/* Procedures */}
+                <div className="bg-teal-50 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold text-teal-800 mb-4">{t('profile.proceduresTitle')}</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.diagnosticProceduresLabel')}</label>
+                      <p className="text-slate-800">
+                        {selectedConsultation.diagnostic_procedures && selectedConsultation.diagnostic_procedures.length > 0
+                          ? selectedConsultation.diagnostic_procedures.map(value => t(PROCEDURE_LABEL_KEYS[value] || value)).join(', ')
+                          : t('profile.none')}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.therapeuticProceduresLabel')}</label>
+                      <p className="text-slate-800">
+                        {selectedConsultation.therapeutic_procedures && selectedConsultation.therapeutic_procedures.length > 0
+                          ? selectedConsultation.therapeutic_procedures.map(value => t(PROCEDURE_LABEL_KEYS[value] || value)).join(', ')
+                          : t('profile.none')}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Consultation Details */}

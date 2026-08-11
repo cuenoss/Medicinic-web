@@ -239,6 +239,25 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 print(f"Error checking/adding verification columns: {e}")
 
+        # Add procedures columns to consultations table if they don't exist
+        async with engine.begin() as conn:
+            try:
+                for col_name in ["diagnostic_procedures", "therapeutic_procedures"]:
+                    result = await conn.execute(text(
+                        "SELECT column_name FROM information_schema.columns "
+                        f"WHERE table_name = 'consultations' AND column_name = '{col_name}'"
+                    ))
+                    if not result.fetchone():
+                        print(f"Adding {col_name} column to consultations table...")
+                        await conn.execute(text(
+                            f"ALTER TABLE consultations ADD COLUMN {col_name} JSONB DEFAULT '[]'::jsonb"
+                        ))
+                        print(f"Successfully added {col_name}")
+                    else:
+                        print(f"{col_name} column already exists in consultations table")
+            except Exception as e:
+                print(f"Error checking/adding procedures columns: {e}")
+
         print("Database tables ensured (create_all)")
     except Exception as e:
         print(f"Database connection failed: {e}")
@@ -343,7 +362,11 @@ async def fix_consultations_table():
                     
                     -- Family Medical History
                     family_history TEXT,
-                    
+
+                    -- Procedures
+                    diagnostic_procedures JSONB DEFAULT '[]'::jsonb,
+                    therapeutic_procedures JSONB DEFAULT '[]'::jsonb,
+
                     -- Consultation Details
                     diagnosis TEXT,
                     date TIMESTAMP NOT NULL,

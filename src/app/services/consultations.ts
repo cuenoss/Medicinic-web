@@ -27,6 +27,8 @@ export interface Consultation {
   surgeries?: string;
   family_history?: string;
   diagnosis?: string;
+  diagnostic_procedures?: string[];
+  therapeutic_procedures?: string[];
   date: string;
   doctor: string;
   created_at: string;
@@ -59,6 +61,8 @@ export interface ConsultationCreate {
   surgeries?: string;
   family_history?: string;
   diagnosis?: string;
+  diagnostic_procedures?: string[];
+  therapeutic_procedures?: string[];
   date: string;
   doctor: string;
 }
@@ -88,6 +92,8 @@ export interface ConsultationUpdate {
   surgeries?: string;
   family_history?: string;
   diagnosis?: string;
+  diagnostic_procedures?: string[];
+  therapeutic_procedures?: string[];
   date?: string;
   doctor?: string;
 }

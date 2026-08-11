@@ -12,19 +12,92 @@ import {
   X,
   ArrowLeft,
   User,
+  Activity,
+  TestTube2,
+  Syringe,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Card } from '../ui/card';
+import { Checkbox } from '../ui/checkbox';
 import { useTranslation } from 'react-i18next';
+import {
+  DIAGNOSTIC_PROCEDURE_OPTIONS,
+  THERAPEUTIC_PROCEDURE_OPTIONS,
+  ProcedureOption,
+  buildProcedureList,
+} from './procedureOptions';
 
 interface AttachedFile {
   id: string;
   name: string;
   size: number;
   type: string;
+}
+
+function ProcedureCategoryField({
+  icon: Icon,
+  titleKey,
+  descKey,
+  options,
+  selected,
+  onToggle,
+  otherValue,
+  onOtherChange,
+  idPrefix,
+}: {
+  icon: typeof Stethoscope;
+  titleKey: string;
+  descKey: string;
+  options: ProcedureOption[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  otherValue: string;
+  onOtherChange: (value: string) => void;
+  idPrefix: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50/50">
+      <div>
+        <h4 className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <Icon className="w-4 h-4 text-blue-600" />
+          {t(titleKey)}
+        </h4>
+        <p className="text-xs text-slate-500 mt-0.5">{t(descKey)}</p>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+        {options.map((option) => (
+          <label
+            key={option.value}
+            htmlFor={`${idPrefix}-${option.value}`}
+            className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer"
+          >
+            <Checkbox
+              id={`${idPrefix}-${option.value}`}
+              checked={selected.includes(option.value)}
+              onCheckedChange={() => onToggle(option.value)}
+            />
+            {t(option.labelKey)}
+          </label>
+        ))}
+      </div>
+      <div className="space-y-1.5 pt-1">
+        <Label htmlFor={`${idPrefix}-other`} className="text-xs text-slate-500">
+          {t('consultations.otherProcedures')}
+        </Label>
+        <Input
+          id={`${idPrefix}-other`}
+          value={otherValue}
+          onChange={(e) => onOtherChange(e.target.value)}
+          placeholder={t('consultations.otherProceduresPlaceholder')}
+          className="border-slate-300"
+        />
+      </div>
+    </div>
+  );
 }
 
 export function ConsultationForm() {
@@ -35,6 +108,10 @@ export function ConsultationForm() {
     chiefComplaint: '',
     clinicalExamination: '',
     diagnosis: '',
+    diagnosticProcedures: [] as string[],
+    diagnosticProceduresOther: '',
+    therapeuticProcedures: [] as string[],
+    therapeuticProceduresOther: '',
     treatment: '',
     notes: '',
   });
@@ -46,11 +123,24 @@ export function ConsultationForm() {
     day: 'numeric',
   });
 
-  const handleInputChange = (
-    field: keyof typeof formData,
-    value: string
+  const handleInputChange = <K extends keyof typeof formData>(
+    field: K,
+    value: (typeof formData)[K]
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const toggleProcedure = (
+    field: 'diagnosticProcedures' | 'therapeuticProcedures',
+    value: string
+  ) => {
+    setFormData((prev) => {
+      const list = prev[field];
+      const next = list.includes(value)
+        ? list.filter((item) => item !== value)
+        : [...list, value];
+      return { ...prev, [field]: next };
+    });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,7 +167,18 @@ export function ConsultationForm() {
   };
 
   const handleSave = () => {
-    console.log('Saving consultation:', { ...formData, attachedFiles });
+    const payload = {
+      ...formData,
+      diagnosticProcedures: buildProcedureList(
+        formData.diagnosticProcedures,
+        formData.diagnosticProceduresOther
+      ),
+      therapeuticProcedures: buildProcedureList(
+        formData.therapeuticProcedures,
+        formData.therapeuticProceduresOther
+      ),
+    };
+    console.log('Saving consultation:', { ...payload, attachedFiles });
     alert(t('consultations.savedSuccess'));
     navigate('/consultations');
   };
@@ -190,6 +291,40 @@ export function ConsultationForm() {
               }
               rows={3}
               className="border-slate-300 resize-none"
+            />
+          </div>
+
+          {/* Procedures */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2 text-slate-700">
+              <Activity className="w-4 h-4 text-blue-600" />
+              {t('consultations.procedures')}
+            </Label>
+            <ProcedureCategoryField
+              icon={TestTube2}
+              titleKey="consultations.diagnosticProcedures"
+              descKey="consultations.diagnosticProceduresDesc"
+              options={DIAGNOSTIC_PROCEDURE_OPTIONS}
+              selected={formData.diagnosticProcedures}
+              onToggle={(value) => toggleProcedure('diagnosticProcedures', value)}
+              otherValue={formData.diagnosticProceduresOther}
+              onOtherChange={(value) =>
+                handleInputChange('diagnosticProceduresOther', value)
+              }
+              idPrefix="diagnostic-procedure"
+            />
+            <ProcedureCategoryField
+              icon={Syringe}
+              titleKey="consultations.therapeuticProcedures"
+              descKey="consultations.therapeuticProceduresDesc"
+              options={THERAPEUTIC_PROCEDURE_OPTIONS}
+              selected={formData.therapeuticProcedures}
+              onToggle={(value) => toggleProcedure('therapeuticProcedures', value)}
+              otherValue={formData.therapeuticProceduresOther}
+              onOtherChange={(value) =>
+                handleInputChange('therapeuticProceduresOther', value)
+              }
+              idPrefix="therapeutic-procedure"
             />
           </div>
 

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db import Base
@@ -47,6 +48,10 @@ class Consultation(Base):
     # Family Medical History
     family_history = Column(Text)
     
+    # Procedures
+    diagnostic_procedures = Column(JSONB, default=list)
+    therapeutic_procedures = Column(JSONB, default=list)
+
     # Consultation Details
     diagnosis = Column(Text)
     date = Column(DateTime, nullable=False)
