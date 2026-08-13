@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { appointmentsService, Appointment } from '../../services/appointments';
 import { patientsService } from '../../services/patients';
 import { useTranslation } from 'react-i18next';
+import { toast } from '../ui/toast';
 
 export function AppointmentCalendar() {
   const { t, i18n } = useTranslation();
@@ -137,10 +138,10 @@ export function AppointmentCalendar() {
       setShowRescheduleModal(false);
       setReschedulingAppointment(null);
       setRescheduleData({ date: '', time: '' });
-      alert(t('appointments.saveChanges') + '!');
+      toast.success(t('appointments.saveChanges') + '!');
     } catch (error) {
       console.error('Failed to reschedule appointment:', error);
-      alert(t('common.error'));
+      toast.error(t('common.error'));
     }
   };
 
@@ -163,7 +164,7 @@ export function AppointmentCalendar() {
         setSearchedPatient(null);
       } catch (error) {
         console.error('Failed to create appointment:', error);
-        alert(`${t('common.error')}: ${(error as Error).message}`);
+        toast.error(`${t('common.error')}: ${(error as Error).message}`);
       }
     }
   };

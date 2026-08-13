@@ -11,6 +11,7 @@ import { Switch } from '../ui/switch';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import { settingsService } from '../../services/settings';
+import { toast } from '../ui/toast';
 import { useTranslation } from 'react-i18next';
 
 export function Settings() {
@@ -120,7 +121,7 @@ export function Settings() {
       await saveBlobToLocation(blob, filename);
     } catch (error) {
       console.error('Local backup failed:', error);
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : 'Local backup failed. Please try again or check your permissions.'
@@ -171,21 +172,20 @@ export function Settings() {
             paymentAlerts: ns.payment_alerts ?? true,
           });
         }
+
+        setProfile({
+          fullName: val('doctor_full_name') || user?.fullName || '',
+          specialization: val('doctor_specialization') || 'General Practitioner',
+          license: val('doctor_license') || '',
+          email: val('doctor_email') || user?.email || '',
+          phone: val('doctor_phone') || '',
+        });
       } catch (err) {
         console.error('Failed to load settings:', err);
       } finally {
         setLoadingSettings(false);
       }
     };
-
-    // Pre-fill profile from auth context
-    if (user) {
-      setProfile(p => ({
-        ...p,
-        fullName: user.fullName || '',
-        email: user.email || '',
-      }));
-    }
 
     loadSettings();
   }, [user]);
@@ -200,10 +200,10 @@ export function Settings() {
         doctor_email: profile.email,
         doctor_phone: profile.phone,
       });
-      alert(t('settings.saved'));
+      toast.success(t('settings.saved'));
     } catch (err) {
       console.error('Failed to save profile:', err);
-      alert(t('common.error'));
+      toast.error(t('common.error'));
     } finally {
       setSavingProfile(false);
     }
@@ -219,10 +219,10 @@ export function Settings() {
         clinic_email: clinicInfo.email,
         clinic_website: clinicInfo.website,
       });
-      alert(t('settings.saved'));
+      toast.success(t('settings.saved'));
     } catch (err) {
       console.error('Failed to save clinic info:', err);
-      alert(t('common.error'));
+      toast.error(t('common.error'));
     } finally {
       setSavingClinic(false);
     }
@@ -245,10 +245,10 @@ export function Settings() {
         saturday: parseHours(workingHours.saturday),
         sunday: parseHours(workingHours.sunday),
       });
-      alert(t('settings.saved'));
+      toast.success(t('settings.saved'));
     } catch (err) {
       console.error('Failed to save hours:', err);
-      alert(t('common.error'));
+      toast.error(t('common.error'));
     } finally {
       setSavingHours(false);
     }
@@ -451,7 +451,7 @@ export function Settings() {
             <Card className="p-5 border-2 border-blue-200 bg-blue-50">
               <h3 className="font-semibold text-slate-800 mb-2">{t('settings.cloudBackup')}</h3>
               <p className="text-sm text-slate-600 mb-4">{t('settings.cloudBackupDesc')}</p>
-              <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => alert('Cloud backup initiated...')}>
+              <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => toast.info('Cloud backup initiated...')}>
                 <Database className="w-4 h-4 mr-2" />
                 {t('settings.backupToCloud')}
               </Button>

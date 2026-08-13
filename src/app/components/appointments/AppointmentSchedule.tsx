@@ -5,6 +5,7 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { appointmentsService, Appointment } from '../../services/appointments';
 import { useTranslation } from 'react-i18next';
+import { toast } from '../ui/toast';
 
 export function AppointmentSchedule() {
   const { t, i18n } = useTranslation();
@@ -76,7 +77,7 @@ export function AppointmentSchedule() {
         });
       } catch (error) {
         console.error('Failed to create appointment:', error);
-        alert(t('common.error'));
+        toast.error(t('common.error'));
       }
     }
   };

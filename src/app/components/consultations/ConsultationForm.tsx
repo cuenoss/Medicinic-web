@@ -22,6 +22,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Card } from '../ui/card';
 import { Checkbox } from '../ui/checkbox';
+import { toast } from '../ui/toast';
 import { useTranslation } from 'react-i18next';
 import {
   DIAGNOSTIC_PROCEDURE_OPTIONS,
@@ -179,7 +180,7 @@ export function ConsultationForm() {
       ),
     };
     console.log('Saving consultation:', { ...payload, attachedFiles });
-    alert(t('consultations.savedSuccess'));
+    toast.success(t('consultations.savedSuccess'));
     navigate('/consultations');
   };
 

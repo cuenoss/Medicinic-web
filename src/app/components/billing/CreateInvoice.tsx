@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
+import { toast } from '../ui/toast';
 
 export function CreateInvoice() {
   const { t } = useTranslation();
@@ -21,7 +22,7 @@ export function CreateInvoice() {
 
   const handleSave = () => {
     console.log('Creating invoice:', formData);
-    alert('Invoice created successfully!');
+    toast.success('Invoice created successfully!');
     navigate('/billing');
   };
 

@@ -24,6 +24,7 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Avatar } from '../ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { toast } from '../ui/toast';
 import { patientsService, Patient, PatientUpdate, AttachedFile } from '../../services/patients';
 import { consultationsService, Consultation } from '../../services/consultations';
 import { ordonnancesService, Ordonnance } from '../../services/ordonnances';
@@ -268,7 +269,7 @@ export function PatientProfile() {
         setShowEditModal(false);
       } catch (error) {
         console.error('Failed to update patient:', error);
-        alert(t('profile.updateFailed'));
+        toast.error(t('profile.updateFailed'));
       }
     }
   };
@@ -292,10 +293,10 @@ export function PatientProfile() {
         const uploadedResults = await Promise.all(uploadPromises);
         setUploadedFiles(prev => [...prev, ...uploadedResults]);
         console.log('Uploaded files:', uploadedResults);
-        alert(t('profile.filesUploaded'));
+        toast.success(t('profile.filesUploaded'));
       } catch (error) {
         console.error('Failed to upload files:', error);
-        alert(t('profile.filesUploadFailed'));
+        toast.error(t('profile.filesUploadFailed'));
       }
     }
   };
@@ -379,10 +380,10 @@ export function PatientProfile() {
         setShowFileViewer(false);
       }
       
-      alert(t('profile.fileDeleted'));
+      toast.success(t('profile.fileDeleted'));
     } catch (error) {
       console.error('Failed to delete file:', error);
-      alert(t('profile.fileDeleteFailed'));
+      toast.error(t('profile.fileDeleteFailed'));
     }
   };
 
@@ -502,10 +503,10 @@ export function PatientProfile() {
           doctor: ''
         });
 
-        alert(t('profile.consultationAdded'));
+        toast.success(t('profile.consultationAdded'));
       } catch (error) {
         console.error('Failed to add consultation:', error);
-        alert(t('profile.consultationFailed'));
+        toast.error(t('profile.consultationFailed'));
       }
     } else {
       console.error('Cannot create consultation - invalid patient data');
@@ -518,7 +519,7 @@ export function PatientProfile() {
         patientId: patient?.id || 0,
         patientIdValid: (patient?.id || 0) > 0
       });
-      alert(t('profile.consultationInvalid'));
+      toast.error(t('profile.consultationInvalid'));
     }
   };
 
@@ -543,10 +544,10 @@ export function PatientProfile() {
         // Clear the form
         setOrdonnanceContent('');
         
-        alert(t('profile.ordonnanceSaved'));
+        toast.success(t('profile.ordonnanceSaved'));
       } catch (error) {
         console.error('Failed to save ordonnance:', error);
-        alert(t('profile.ordonnanceFailed'));
+        toast.error(t('profile.ordonnanceFailed'));
       }
     }
   };

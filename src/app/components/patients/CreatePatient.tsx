@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { ArrowLeft, User, Mail, Phone, Heart, AlertTriangle, Shield, Check } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { patientsService } from '../../services/patients';
+import { toast } from '../ui/toast';
 import { useTranslation } from 'react-i18next';
 
 const SECTIONS = ['personal', 'contact', 'medical', 'emergency'] as const;
@@ -34,10 +35,27 @@ export function CreatePatient() {
     }
   };
 
+  // "Next" turns into "Create Patient" in the same on-screen spot the instant Emergency
+  // Contact (the last section) becomes active. A double-click on "Next" from Medical
+  // Information then lands its second click on the new Submit button, creating the
+  // patient before Emergency Contact is ever shown. Ignore submits that land within
+  // the same click gesture as arriving on this section.
+  const enteredEmergencyAtRef = useRef(0);
+
+  const goToSection = (target: Section) => {
+    if (target === 'emergency') {
+      enteredEmergencyAtRef.current = Date.now();
+    }
+    setActiveSection(target);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (Date.now() - enteredEmergencyAtRef.current < 400) {
+      return;
+    }
     if (!formData.full_name || !formData.email || !formData.phone) {
-      alert('Please fill in Name, Email and Phone');
+      toast.error('Please fill in Name, Email and Phone');
       return;
     }
     try {
@@ -47,7 +65,7 @@ export function CreatePatient() {
     } catch (error) {
       console.error('Failed to create patient:', error);
       const message = error instanceof Error ? error.message : 'Failed to create patient. Please try again.';
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -289,13 +307,13 @@ export function CreatePatient() {
               {/* Prev / Next section */}
               {SECTIONS.indexOf(activeSection) > 0 && (
                 <Button type="button" variant="outline"
-                  onClick={() => setActiveSection(SECTIONS[SECTIONS.indexOf(activeSection) - 1])}>
+                  onClick={() => goToSection(SECTIONS[SECTIONS.indexOf(activeSection) - 1])}>
                   ← {t('common.previous')}
                 </Button>
               )}
               {SECTIONS.indexOf(activeSection) < SECTIONS.length - 1 ? (
                 <Button type="button" className="bg-blue-600 hover:bg-blue-700"
-                  onClick={() => setActiveSection(SECTIONS[SECTIONS.indexOf(activeSection) + 1])}>
+                  onClick={() => goToSection(SECTIONS[SECTIONS.indexOf(activeSection) + 1])}>
                   {t('common.next')} →
                 </Button>
               ) : (

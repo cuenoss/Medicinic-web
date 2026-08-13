@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
+import { toast } from '../ui/toast';
 import { 
   financeService, 
   ExpenseListResponse, 
@@ -103,7 +104,7 @@ export function Finance() {
         await loadFinanceData(); // Refresh data
       } catch (error) {
         console.error('Failed to create expense:', error);
-        alert(t('finance.addExpenseFailed'));
+        toast.error(t('finance.addExpenseFailed'));
       }
     }
   };
