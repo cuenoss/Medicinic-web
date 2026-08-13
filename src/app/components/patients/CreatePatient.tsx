@@ -25,6 +25,15 @@ export function CreatePatient() {
   const set = (field: string, value: string) =>
     setFormData(prev => ({ ...prev, [field]: value }));
 
+  // Pressing Enter in a text input implicitly submits the nearest <form> even with
+  // no submit button visible on the current tab — block that so only the final
+  // "Create Patient" button (a real click, not a keypress) can submit the wizard.
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.full_name || !formData.email || !formData.phone) {
@@ -37,7 +46,8 @@ export function CreatePatient() {
       navigate(`/patients/${newPatient.id}`);
     } catch (error) {
       console.error('Failed to create patient:', error);
-      alert('Failed to create patient. Please try again.');
+      const message = error instanceof Error ? error.message : 'Failed to create patient. Please try again.';
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -108,7 +118,7 @@ export function CreatePatient() {
           })}
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown}>
           {/* Personal Information */}
           {activeSection === 'personal' && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

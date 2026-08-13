@@ -22,6 +22,7 @@ import { api } from '../../services/api';
 import { appointmentsService } from '../../services/appointments';
 import { patientsService } from '../../services/patients';
 import { financeService } from '../../services/finance';
+import { settingsService } from '../../services/settings';
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -47,9 +48,21 @@ export function Dashboard() {
     totalExpense: '0'
   });
   const [loading, setLoading] = useState(true);
+  const [clinicName, setClinicName] = useState('');
+  const [specialization, setSpecialization] = useState('');
 
   // Fetch data from API
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await settingsService.getAllSettings();
+        setClinicName(settings.clinic_name?.value || '');
+        setSpecialization(settings.doctor_specialization?.value || '');
+      } catch (error) {
+        console.error('Failed to fetch dashboard settings:', error);
+      }
+    };
+
     const fetchDashboardData = async () => {
       try {
         // Fetch real appointments data, patient data, and finance data
@@ -87,6 +100,7 @@ export function Dashboard() {
     };
 
     fetchDashboardData();
+    fetchSettings();
   }, []);
   const statsCards = [
     {
@@ -264,9 +278,15 @@ export function Dashboard() {
           </Avatar>
           <div className="flex-1">
             <h2 className="text-xl font-semibold mb-1">Dr. {user?.fullName || 'Loading...'}</h2>
-            <p className="text-blue-100">{t('dashboard.generalPractitioner')}</p>
+            <p className="text-blue-100">{specialization || t('dashboard.generalPractitioner')}</p>
             <p className="text-sm text-blue-100 mt-1">{user?.email || 'doctor@clinic.com'}</p>
           </div>
+          {clinicName && (
+            <div className="text-right hidden sm:block">
+              <p className="text-xs text-blue-100 uppercase tracking-wide">{t('settings.clinicName')}</p>
+              <p className="font-medium">{clinicName}</p>
+            </div>
+          )}
         </div>
       </Card>
 

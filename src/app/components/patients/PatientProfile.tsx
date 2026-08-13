@@ -28,6 +28,7 @@ import { patientsService, Patient, PatientUpdate, AttachedFile } from '../../ser
 import { consultationsService, Consultation } from '../../services/consultations';
 import { ordonnancesService, Ordonnance } from '../../services/ordonnances';
 import { useAuth } from '../../contexts/AuthContext';
+import { settingsService } from '../../services/settings';
 import {
   DIAGNOSTIC_PROCEDURE_OPTIONS,
   THERAPEUTIC_PROCEDURE_OPTIONS,
@@ -49,10 +50,11 @@ export function PatientProfile() {
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [showOrdonnanceModal, setShowOrdonnanceModal] = useState(false);
   const [ordonnanceContent, setOrdonnanceContent] = useState('');
-  // Doctor details printed on the prescription header — remembered in the browser
-  const [ordonnanceSpeciality, setOrdonnanceSpeciality] = useState(() => localStorage.getItem('ordonnance_speciality') || '');
-  const [ordonnanceAddress, setOrdonnanceAddress] = useState(() => localStorage.getItem('ordonnance_address') || '');
-  const [ordonnancePhone, setOrdonnancePhone] = useState(() => localStorage.getItem('ordonnance_phone') || '');
+  // Doctor details printed on the prescription header — sourced from the same
+  // Settings-backed clinic/doctor profile shown in Settings.tsx and the Dashboard.
+  const [ordonnanceSpeciality, setOrdonnanceSpeciality] = useState('');
+  const [ordonnanceAddress, setOrdonnanceAddress] = useState('');
+  const [ordonnancePhone, setOrdonnancePhone] = useState('');
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [showConsultationDetails, setShowConsultationDetails] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<AttachedFile[]>([]);
@@ -139,6 +141,42 @@ export function PatientProfile() {
       return { ...prev, [field]: next };
     });
   };
+
+  // Load prescription header fields from the shared clinic/doctor Settings
+  useEffect(() => {
+    const loadOrdonnanceHeader = async () => {
+      try {
+        const settings = await settingsService.getAllSettings();
+        const legacySpeciality = localStorage.getItem('ordonnance_speciality') || '';
+        const legacyAddress = localStorage.getItem('ordonnance_address') || '';
+        const legacyPhone = localStorage.getItem('ordonnance_phone') || '';
+
+        const speciality = settings.doctor_specialization?.value || legacySpeciality;
+        const address = settings.clinic_address?.value || legacyAddress;
+        const phone = settings.clinic_phone?.value || legacyPhone;
+
+        setOrdonnanceSpeciality(speciality);
+        setOrdonnanceAddress(address);
+        setOrdonnancePhone(phone);
+
+        // One-time migration: carry any pre-existing browser-only values into Settings
+        // so they're no longer lost when switching browsers/devices.
+        if (!settings.doctor_specialization?.value && legacySpeciality) {
+          settingsService.updateSetting('doctor_specialization', legacySpeciality).catch(console.error);
+        }
+        if (!settings.clinic_address?.value && legacyAddress) {
+          settingsService.updateSetting('clinic_address', legacyAddress).catch(console.error);
+        }
+        if (!settings.clinic_phone?.value && legacyPhone) {
+          settingsService.updateSetting('clinic_phone', legacyPhone).catch(console.error);
+        }
+      } catch (error) {
+        console.error('Failed to load clinic/doctor settings for prescription header:', error);
+      }
+    };
+
+    loadOrdonnanceHeader();
+  }, []);
 
   // Load patient data
   useEffect(() => {
@@ -1005,14 +1043,18 @@ ${ordonnanceContent}
           <Card className="p-6">
             <h4 className="font-semibold text-slate-800 mb-4">{t('profile.createNewOrdonnance')}</h4>
             <div className="space-y-4">
-              {/* Doctor details — printed at the top of the prescription, remembered in the browser */}
+              {/* Doctor details — printed at the top of the prescription, shared with Settings */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">{t('profile.speciality')}</label>
                   <input
                     type="text"
                     value={ordonnanceSpeciality}
-                    onChange={(e) => { setOrdonnanceSpeciality(e.target.value); localStorage.setItem('ordonnance_speciality', e.target.value); }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setOrdonnanceSpeciality(value);
+                      settingsService.updateSetting('doctor_specialization', value).catch(console.error);
+                    }}
                     placeholder={t('profile.specialityPlaceholder')}
                     className="w-full border border-slate-300 rounded-lg px-3 py-2"
                   />
@@ -1022,7 +1064,11 @@ ${ordonnanceContent}
                   <input
                     type="text"
                     value={ordonnanceAddress}
-                    onChange={(e) => { setOrdonnanceAddress(e.target.value); localStorage.setItem('ordonnance_address', e.target.value); }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setOrdonnanceAddress(value);
+                      settingsService.updateSetting('clinic_address', value).catch(console.error);
+                    }}
                     placeholder={t('profile.clinicAddressPlaceholder')}
                     className="w-full border border-slate-300 rounded-lg px-3 py-2"
                   />
@@ -1032,7 +1078,11 @@ ${ordonnanceContent}
                   <input
                     type="text"
                     value={ordonnancePhone}
-                    onChange={(e) => { setOrdonnancePhone(e.target.value); localStorage.setItem('ordonnance_phone', e.target.value); }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setOrdonnancePhone(value);
+                      settingsService.updateSetting('clinic_phone', value).catch(console.error);
+                    }}
                     placeholder={t('profile.clinicPhonePlaceholder')}
                     className="w-full border border-slate-300 rounded-lg px-3 py-2"
                   />

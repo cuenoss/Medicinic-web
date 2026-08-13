@@ -40,10 +40,17 @@ export class SettingsService extends ApiClient {
   }
 
   async bulkUpdate(updates: Record<string, any>): Promise<void> {
-    await this.request('/api/settings/bulk-update', {
+    const result = await this.request<{
+      updated: string[];
+      failed: { key: string; error: string }[];
+      total_updated: number;
+    }>('/api/settings/bulk-update', {
       method: 'POST',
       body: JSON.stringify({ updates }),
     });
+    if (result.failed && result.failed.length > 0) {
+      throw new Error(`Failed to save: ${result.failed.map((f) => f.key).join(', ')}`);
+    }
   }
 
   async initializeDefaults(): Promise<void> {

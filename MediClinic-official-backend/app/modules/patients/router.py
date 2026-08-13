@@ -154,7 +154,7 @@ async def create_patient(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to create patient")
+        raise HTTPException(status_code=500, detail=f"Failed to create patient: {str(e)}")
 
 # Update existing patient
 @router.patch("/{patient_id}", response_model=PatientResponse)

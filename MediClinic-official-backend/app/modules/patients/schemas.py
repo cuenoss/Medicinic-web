@@ -1,6 +1,11 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 import datetime
+
+def _blank_to_none(v):
+    """Empty-string form fields (optional dates/numbers left blank) aren't valid dates/ints —
+    treat them as absent instead of failing validation."""
+    return None if v == '' else v
 
 # Helper functions for comma-separated data
 def process_comma_separated_field(field_value: list[str] | str | None) -> str:
@@ -38,6 +43,10 @@ class PatientBase(BaseModel):
     last_visit: Optional[datetime.date] = None
     next_appointment: Optional[datetime.date] = None
 
+    _blank_optional_fields = field_validator(
+        'amount_paid', 'date_of_birth', 'last_visit', 'next_appointment', mode='before'
+    )(_blank_to_none)
+
 # Create schemas
 class PatientCreate(PatientBase):
     pass
@@ -58,6 +67,10 @@ class PatientUpdate(BaseModel):
     emergency_contact_phone: Optional[str] = None
     last_visit: Optional[datetime.date] = None
     next_appointment: Optional[datetime.date] = None
+
+    _blank_optional_fields = field_validator(
+        'amount_paid', 'date_of_birth', 'last_visit', 'next_appointment', mode='before'
+    )(_blank_to_none)
 
 # Response schemas
 class PatientResponse(BaseModel):

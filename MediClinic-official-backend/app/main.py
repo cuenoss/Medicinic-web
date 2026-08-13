@@ -192,7 +192,7 @@ async def lifespan(app: FastAPI):
                 first_doctor_result = await conn.execute(text("SELECT MIN(id) FROM doctors"))
                 first_doctor_id = first_doctor_result.scalar()
 
-                for table_name in ["patients", "appointments", "consultations", "ordonnances", "expenses"]:
+                for table_name in ["patients", "appointments", "consultations", "ordonnances", "expenses", "system_settings"]:
                     col_check = await conn.execute(text(f"""
                         SELECT column_name
                         FROM information_schema.columns
@@ -257,6 +257,36 @@ async def lifespan(app: FastAPI):
                         print(f"{col_name} column already exists in consultations table")
             except Exception as e:
                 print(f"Error checking/adding procedures columns: {e}")
+
+        # system_settings used to be a single global table (one row per key, shared by every
+        # doctor). Now that doctor_id has been backfilled above, replace the old globally-unique
+        # index on `key` with a per-doctor unique constraint so each doctor can have their own
+        # e.g. 'clinic_name' setting without colliding with another doctor's.
+        async with engine.begin() as conn:
+            try:
+                old_index = await conn.execute(text("""
+                    SELECT indexname FROM pg_indexes
+                    WHERE tablename = 'system_settings'
+                      AND indexdef ILIKE '%UNIQUE%'
+                      AND indexdef ILIKE '%(key)%'
+                """))
+                old_index_row = old_index.fetchone()
+                if old_index_row:
+                    print(f"Dropping legacy global-unique index {old_index_row[0]} on system_settings.key...")
+                    await conn.execute(text(f'DROP INDEX IF EXISTS "{old_index_row[0]}"'))
+
+                constraint_check = await conn.execute(text(
+                    "SELECT conname FROM pg_constraint WHERE conname = 'uq_system_settings_doctor_key'"
+                ))
+                if not constraint_check.fetchone():
+                    print("Adding composite unique constraint on system_settings(doctor_id, key)...")
+                    await conn.execute(text(
+                        "ALTER TABLE system_settings ADD CONSTRAINT uq_system_settings_doctor_key UNIQUE (doctor_id, key)"
+                    ))
+                else:
+                    print("uq_system_settings_doctor_key constraint already exists")
+            except Exception as e:
+                print(f"Error scoping system_settings uniqueness to doctor: {e}")
 
         print("Database tables ensured (create_all)")
     except Exception as e:

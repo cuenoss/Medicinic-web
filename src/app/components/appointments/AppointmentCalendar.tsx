@@ -201,7 +201,15 @@ export function AppointmentCalendar() {
               {t('appointments.dailySchedule')}
             </Button>
           </Link>
-          <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowNewAppointmentModal(true)}>
+          <Button
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => {
+              setSelectedDay(null);
+              setNewAppointment({ phoneNumber: '', day: '', time: '', date: '', patientId: null, patientName: '' });
+              setSearchedPatient(null);
+              setShowNewAppointmentModal(true);
+            }}
+          >
             <Plus className="w-5 h-5 mr-2" />
             {t('appointments.newAppointment')}
           </Button>
@@ -321,6 +329,25 @@ export function AppointmentCalendar() {
                   </p>
                 </div>
               )}
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  {t('appointments.date')}
+                </label>
+                <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <input
+                    type="date"
+                    value={newAppointment.date}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const dayNum = value ? String(parseInt(value.split('-')[2], 10)) : '';
+                      setNewAppointment({ ...newAppointment, date: value, day: dayNum });
+                    }}
+                    className="flex-1 outline-none text-slate-800"
+                  />
+                </div>
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
